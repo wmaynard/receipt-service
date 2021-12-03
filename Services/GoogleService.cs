@@ -24,19 +24,19 @@ namespace Rumble.Platform.ReceiptService.Services
 
             if (transactionId == null)
             {
-                Log.Error(owner: Owner.Nathan, message: $"Failed to verify Google receipt. No orderId. Receipt {receipt}");
+                Log.Error(owner: Owner.Nathan, message: $"Failed to verify Google receipt. No orderId. Receipt {receipt.JSON}");
                 return null;
             }
 
             if (offerId == null)
             {
-                Log.Error(owner: Owner.Nathan, message: $"Failed to verify Google receipt. No product ID. Receipt {receipt}");
+                Log.Error(owner: Owner.Nathan, message: $"Failed to verify Google receipt. No product ID. Receipt {receipt.JSON}");
                 return null;
             }
 
             if (signature == null)
             {
-                Log.Error(owner: Owner.Nathan, message: $"Failed to verify Google receipt. No signature. Receipt {receipt}");
+                Log.Error(owner: Owner.Nathan, message: $"Failed to verify Google receipt. No signature. Receipt {receipt.JSON}");
                 return null;
             }
             
@@ -72,13 +72,13 @@ namespace Rumble.Platform.ReceiptService.Services
             bool verified = false;
             try
             {
+                // TODO try another receipt with a tested valid signature
                 // the following appears to return false for the provided sample data sent
                 verified = rsaDeformatter.VerifySignature(hash, sigBytes);
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
-                Log.Error(owner: Owner.Nathan, message: $"Error occured while attempting to verify Google receipt signature. Receipt {receipt}");
+                Log.Error(owner: Owner.Nathan, message: $"Error occured while attempting to verify Google receipt signature. Receipt {receipt.JSON}");
                 return null;
             }
             
