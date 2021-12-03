@@ -17,9 +17,9 @@ namespace Rumble.Platform.ReceiptService.Services
         // receipt is base64 encoded, supposedly fetched from app on device with NSBundle.appStoreReceiptURL
         // requires password
         // requires exclude-old-transactions if auto-renewable subscriptions
-        public async Task<AppleValidation> VerifyApple(Receipt receipt, string accountId = null, string signature = null)
+        public async Task<VerificationResult> VerifyApple(Receipt receipt, string accountId = null, string signature = null)
         {
-            AppleValidation verification = null;
+            VerificationResult verification = null;
             string receiptData = receipt.ToJson();
             try
             {
@@ -41,9 +41,9 @@ namespace Rumble.Platform.ReceiptService.Services
             return verification;
         }
 
-        public async Task<AppleValidation> VerifyAppleData(string receiptData, string env) // apple takes stringified version of receipt, includes receipt-data, password
+        public async Task<VerificationResult> VerifyAppleData(string receiptData, string env) // apple takes stringified version of receipt, includes receipt-data, password
         {
-            AppleValidation response = null;
+            VerificationResult response = null;
             string reqUri = env == "prod"
                 ? PlatformEnvironment.Variable(name: "iosVerifyReceiptUrl")
                 : PlatformEnvironment.Variable(name: "iosVerifyReceiptSandbox");
@@ -51,7 +51,7 @@ namespace Rumble.Platform.ReceiptService.Services
             HttpResponseMessage httpResponse = await client.PostAsync(requestUri: reqUri, content: receipt);
             if (httpResponse.StatusCode == HttpStatusCode.OK)
             {
-                response = JsonConvert.DeserializeObject<AppleValidation>(httpResponse.ToJson());
+                response = JsonConvert.DeserializeObject<VerificationResult>(httpResponse.ToJson());
             }
             else
             {

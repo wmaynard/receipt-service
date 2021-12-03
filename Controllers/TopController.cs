@@ -48,7 +48,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
             string accountId = Require<string>(key: "account"); // gukey
             string channel = Require<string>(key: "channel");
             Receipt receipt = Require<Receipt>(key: "receipt"); // is stringified in the request
-            Validation validated = null;
+            VerificationResult validated = null;
             
             Log.Info(owner: Owner.Nathan, message: $"Receipt validation request: game: {game}, accountId: {accountId}, channel: {channel}, receipt: {receipt}");
 

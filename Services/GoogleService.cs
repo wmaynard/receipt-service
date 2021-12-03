@@ -16,9 +16,9 @@ namespace Rumble.Platform.ReceiptService.Services
     public class GoogleService : VerificationService
     {
         // google specific looks at receipt, signature, channel?, game
-        public GoogleValidation VerifyGoogle(Receipt receipt, string accountId = null, string signature = null)
+        public VerificationResult VerifyGoogle(Receipt receipt, string accountId = null, string signature = null)
         {
-            GoogleValidation verification = null;
+            VerificationResult verification = null;
             string transactionId = receipt.OrderId;
             string offerId = receipt.ProductId;
 
@@ -45,9 +45,10 @@ namespace Rumble.Platform.ReceiptService.Services
             // maybe eventually make actual certificates to store
 
             // perhaps purchaseInfoBytes is off? format is correct according to google specs, but extra acknowledged and id fields
-            Object purchaseInfo;
-            purchaseInfo.orderId = 
-            byte[] purchaseInfoBytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(receipt));
+            // need to match exactly for verification, use googlevalidation for this purpose
+            // maybe will have to change receipt structure?
+            GoogleValidation purchaseInfo = new GoogleValidation(orderId: receipt.OrderId, packageName: receipt.PackageName, productId: receipt.ProductId, purchaseTime: receipt.PurchaseTime, purchaseState: receipt.PurchaseState, purchaseToken: receipt.PurchaseToken);
+            byte[] purchaseInfoBytes = Encoding.UTF8.GetBytes(purchaseInfo.JSON);
             
             byte[] sigBytes = Convert.FromBase64String(signature);
             
@@ -67,8 +68,7 @@ namespace Rumble.Platform.ReceiptService.Services
             byte[] hash = sha1.ComputeHash(purchaseInfoBytes);
             
             RSAPKCS1SignatureDeformatter rsaDeformatter = new RSAPKCS1SignatureDeformatter(rsa);
-            rsaDeformatter.SetHashAlgorithm("SHA1withRSA");
-
+            rsaDeformatter.SetHashAlgorithm("SHA1");
             bool verified = false;
             try
             {
@@ -77,7 +77,8 @@ namespace Rumble.Platform.ReceiptService.Services
             }
             catch (Exception e)
             {
-                Log.Error(owner: Owner.Nathan, message: $"Error occured while attempting to very Google receipt signature. Receipt {receipt}");
+                Console.WriteLine(e.Message);
+                Log.Error(owner: Owner.Nathan, message: $"Error occured while attempting to verify Google receipt signature. Receipt {receipt}");
                 return null;
             }
             
@@ -85,7 +86,7 @@ namespace Rumble.Platform.ReceiptService.Services
             {
                 string receiptKey = $"{PlatformEnvironment.Variable(name: "RUMBLE_DEPLOYMENT")}_s_aosReceipt_{transactionId}";
                 
-                verification = new GoogleValidation(
+                verification = new VerificationResult(
                     status: "success",
                     response: receipt,
                     transactionId: transactionId,
