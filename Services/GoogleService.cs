@@ -96,6 +96,19 @@ namespace Rumble.Platform.ReceiptService.Services
                     timestamp: receipt.PurchaseTime
                 );
             }
+            else
+            {
+                verification = new VerificationResult(
+                    status: "failed",
+                    response: receipt,
+                    transactionId: receipt.OrderId,
+                    offerId: receipt.ProductId,
+                    receiptKey: null,
+                    receiptData: receipt.JSON,
+                    timestamp: receipt.PurchaseTime
+                );
+                Log.Error(owner: Owner.Nathan, message: $"Failure to validate Google receipt. Receipt: {receipt.JSON}");
+            }
             
             return verification;
         }

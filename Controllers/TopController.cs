@@ -131,7 +131,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
             {
                 validated = await _samsungService.VerifySamsung(receipt: receipt, accountId: accountId);
                 
-                if (validated == null || validated.Status != "true")
+                if (validated == null || validated.Status == "failed")
                 {
                     Log.Error(owner: Owner.Nathan, message: $"Error validating Samsung receipt.  Receipt: {receipt.JSON}");
                     return Problem(detail: "Error validating Samsung receipt.");

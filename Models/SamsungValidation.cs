@@ -5,7 +5,18 @@ namespace Rumble.Platform.ReceiptService.Models
 {
     public class SamsungValidation : Validation
     {
+        internal const string DB_KEY_STATUS = "status";
+
+        public const string FRIENDLY_KEY_STATUS = "status";
         
+        [BsonElement(DB_KEY_STATUS)]
+        [JsonInclude, JsonPropertyName(FRIENDLY_KEY_STATUS)]
+        public string Status { get; private set; }
+
+        public SamsungValidation(string status)
+        {
+            Status = status;
+        }
     }
 }
 
