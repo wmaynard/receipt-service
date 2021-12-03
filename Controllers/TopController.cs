@@ -50,7 +50,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
             Receipt receipt = Require<Receipt>(key: "receipt"); // is stringified in the request
             VerificationResult validated = null;
             
-            Log.Info(owner: Owner.Nathan, message: $"Receipt validation request: game: {game}, accountId: {accountId}, channel: {channel}, receipt: {receipt}");
+            Log.Info(owner: Owner.Nathan, message: $"Receipt validation request: game: {game}, accountId: {accountId}, channel: {channel}, receipt: {receipt.JSON}");
 
             if (game != "tower") // assume rewrite is only for tower atm?
             {
@@ -72,7 +72,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
                 
                 if (validated == null || validated.Status == "failed")
                 {
-                    Log.Error(owner: Owner.Nathan, message: $"Error validating Apple receipt. Receipt: {receipt}");
+                    Log.Error(owner: Owner.Nathan, message: $"Error validating Apple receipt. Receipt: {receipt.JSON}");
                     return Problem(detail: "Error validating Apple receipt.");
                 }
                 if (validated.Status == "success")
@@ -91,7 +91,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
                     }
                     catch (Exception e)
                     {
-                        Log.Error(owner: Owner.Nathan, message: $"Failed to record Apple receipt information. Receipt: {receipt}");
+                        Log.Error(owner: Owner.Nathan, message: $"Failed to record Apple receipt information. Receipt: {receipt.JSON}");
                     }
                 }
                 
@@ -103,7 +103,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
                 
                 if (validated == null || validated.Status == "failed")
                 {
-                    Log.Error(owner: Owner.Nathan, message: $"Failed to validate Google receipt: verification returned false.  Receipt: {receipt}");
+                    Log.Error(owner: Owner.Nathan, message: $"Failed to validate Google receipt: verification returned false.  Receipt: {receipt.JSON}");
                     return Problem(detail: "Failed to validate Google receipt.");
                 }
                 if (validated.Status == "success")
@@ -122,7 +122,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
                     }
                     catch (Exception e)
                     {
-                        Log.Error(owner: Owner.Nathan, message: $"Failed to record Google receipt information. Receipt: {receipt}");
+                        Log.Error(owner: Owner.Nathan, message: $"Failed to record Google receipt information. Receipt: {receipt.JSON}");
                     }
                 }
             }
@@ -133,7 +133,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
                 
                 if (validated == null || validated.Status != "true")
                 {
-                    Log.Error(owner: Owner.Nathan, message: $"Error validating Samsung receipt.  Receipt: {receipt}");
+                    Log.Error(owner: Owner.Nathan, message: $"Error validating Samsung receipt.  Receipt: {receipt.JSON}");
                     return Problem(detail: "Error validating Samsung receipt.");
                 }
                 if (validated.Status == "success")
@@ -152,7 +152,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
                     }
                     catch (Exception e)
                     {
-                        Log.Error(owner: Owner.Nathan, message: $"Failed to record Samsung receipt information. Receipt: {receipt}");
+                        Log.Error(owner: Owner.Nathan, message: $"Failed to record Samsung receipt information. Receipt: {receipt.JSON}");
                     }
                 }
             }

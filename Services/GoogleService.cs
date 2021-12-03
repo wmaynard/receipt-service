@@ -81,7 +81,7 @@ namespace Rumble.Platform.ReceiptService.Services
                 Log.Error(owner: Owner.Nathan, message: $"Error occured while attempting to verify Google receipt signature. Receipt {receipt.JSON}");
                 return null;
             }
-            
+
             if (verified)
             {
                 string receiptKey = $"{PlatformEnvironment.Variable(name: "RUMBLE_DEPLOYMENT")}_s_aosReceipt_{transactionId}";
@@ -92,7 +92,7 @@ namespace Rumble.Platform.ReceiptService.Services
                     transactionId: transactionId,
                     offerId: receipt.ProductId,
                     receiptKey: receiptKey,
-                    receiptData: receipt.ToString(),
+                    receiptData: receipt.JSON,
                     timestamp: receipt.PurchaseTime
                 );
             }

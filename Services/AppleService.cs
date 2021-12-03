@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Json;
+using System.Text;
 using System.Threading.Tasks;
 using MongoDB.Bson;
 using Newtonsoft.Json;
@@ -20,44 +23,79 @@ namespace Rumble.Platform.ReceiptService.Services
         public async Task<VerificationResult> VerifyApple(Receipt receipt, string accountId = null, string signature = null)
         {
             VerificationResult verification = null;
-            string receiptData = receipt.ToJson();
+            AppleValidation verified = null;
             try
             {
-                verification = await VerifyAppleData(receiptData: receiptData, env: "prod");
+                verified = await VerifyAppleData(receipt: receipt, env: "prod");
             }
             catch (Exception e)
             {
                 Log.Error(owner: Owner.Nathan, message: e.Message);
                 try
                 {
-                    verification = await VerifyAppleData(receiptData: receiptData, env: "sandbox");
+                    verified = await VerifyAppleData(receipt: receipt, env: "sandbox");
                 }
                 catch (Exception exception)
                 {
-                    Log.Error(owner: Owner.Nathan, message: $"Failed to validate iTunes receipt against env sandbox. Receipt {receiptData}");
+                    Log.Error(owner: Owner.Nathan, message: $"Failed to validate iTunes receipt against env sandbox. {e.Message}. Receipt {receipt.JSON}");
                 }
             }
 
+            if (verified?.Status == 0)
+            {
+                string receiptKey = $"{PlatformEnvironment.Variable(name: "RUMBLE_DEPLOYMENT")}_s_iosReceipt_{receipt.OrderId}";
+                
+                Console.WriteLine(verified.JSON);
+                verification = new VerificationResult(
+                    status: "success",
+                    response: receipt,
+                    transactionId: receipt.OrderId,
+                    offerId: receipt.ProductId,
+                    receiptKey: receiptKey,
+                    receiptData: receipt.JSON,
+                    timestamp: receipt.PurchaseTime
+                );
+            }
+            else
+            {
+                Console.WriteLine($"Failure to validate receipt. Receipt: {receipt.JSON}");
+            }
             return verification;
         }
 
-        public async Task<VerificationResult> VerifyAppleData(string receiptData, string env) // apple takes stringified version of receipt, includes receipt-data, password
+        public async Task<AppleValidation> VerifyAppleData(Receipt receipt, string env) // apple takes stringified version of receipt, includes receipt-data, password
         {
-            VerificationResult response = null;
+            AppleValidation response = null;
             string reqUri = env == "prod"
                 ? PlatformEnvironment.Variable(name: "iosVerifyReceiptUrl")
                 : PlatformEnvironment.Variable(name: "iosVerifyReceiptSandbox");
-            HttpContent receipt = new StringContent(JsonConvert.SerializeObject(receiptData));
-            HttpResponseMessage httpResponse = await client.PostAsync(requestUri: reqUri, content: receipt);
+
+            byte[] receiptData = Encoding.UTF8.GetBytes(receipt.JSON);
+            string password = PlatformEnvironment.Variable(name: "sharedSecret");
+
+            Dictionary<string, object> reqObj = new Dictionary<string, object>
+            {
+                {"receipt-data", receiptData},
+                {"password", password}
+            };
+
+            string reqJson = JsonConvert.SerializeObject(reqObj);
+
+            JsonContent reqData = JsonContent.Create(reqJson);
+            
+            HttpResponseMessage httpResponse = await client.PostAsync(requestUri: reqUri, content: reqData);
+            // TODO
+            // will require a valid apple receipt to test
             if (httpResponse.StatusCode == HttpStatusCode.OK)
             {
-                response = JsonConvert.DeserializeObject<VerificationResult>(httpResponse.ToJson());
+                string responseBody = await httpResponse.Content.ReadAsStringAsync();
+                response = JsonConvert.DeserializeObject<AppleValidation>(responseBody);
             }
             else
             {
                 throw new Exception(message: $"Failed to verify iTunes receipt. HTTP {httpResponse.StatusCode} with reason {httpResponse.ReasonPhrase}.");
             }
-            if (response.Status == "21007") // fallback to sandbox
+            if (response?.Status == 21007) // fallback to sandbox
             {
                 throw new Exception(message: $"Failed to verify iTunes receipt with environment {env}. Status code 21007 (sandbox).");
             }
