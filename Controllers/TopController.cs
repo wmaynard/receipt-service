@@ -45,7 +45,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
         [HttpGet, Route(template: "redis"), RequireAuth((TokenType.ADMIN))] // to be removed when no longer needed
         public ActionResult UpdateFromRedis()
         {
-            int counter = 0;
+            int counter;
             try
             {
                 counter = _redisService.UpdateDatabase();
