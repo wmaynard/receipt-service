@@ -1,5 +1,4 @@
 using System;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -16,16 +15,19 @@ namespace Rumble.Platform.ReceiptService.Controllers
         private readonly AppleService _appleService;
         private readonly GoogleService _googleService;
         private readonly SamsungService _samsungService;
+        private readonly RedisService _redisService; // to be removed when no longer needed
 
         public TopController(
             AppleService appleService,
             GoogleService googleService,
             SamsungService samsungService,
+            RedisService redisService, // to be removed when no longer needed
             IConfiguration config) : base(config)
         {
             _appleService = appleService;
             _googleService = googleService;
             _samsungService = samsungService;
+            _redisService = redisService; // to be removed when no longer needed
         }
 
         [HttpGet, Route(template: "health"), NoAuth]
@@ -34,8 +36,15 @@ namespace Rumble.Platform.ReceiptService.Controllers
             return Ok(
                 _appleService.HealthCheckResponseObject,
                 _googleService.HealthCheckResponseObject,
-                _samsungService.HealthCheckResponseObject
+                _samsungService.HealthCheckResponseObject,
+                _redisService.HealthCheckResponseObject // to be removed when no longer needed
             );
+        }
+
+        [HttpGet, Route(template: "redis"), RequireAuth((TokenType.ADMIN))] // to be removed when no longer needed
+        public ActionResult UpdateFromRedis()
+        {
+            return Ok();
         }
 
         [HttpPost, Route(template: ""), RequireAuth(TokenType.ADMIN)]

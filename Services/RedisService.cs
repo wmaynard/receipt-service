@@ -1,0 +1,46 @@
+using System.Collections.Generic;
+using Rumble.Platform.Common.Web;
+using Rumble.Platform.ReceiptService.Models;
+using StackExchange.Redis;
+
+namespace Rumble.Platform.ReceiptService.Services
+{
+    public class RedisService : PlatformMongoService<Receipt>
+    {
+        // purpose is to pull data from redis and put into mongo
+        // to be removed when no longer needed
+
+        public RedisService() : base(collection: "receipts") { }
+
+        public void UpdateDatabase()
+            {
+                // ex for when working on actual server, use env variables
+                
+                // var conn = ConnectionMultiplexer.Connect("contoso5.redis.cache.windows.net:8909,ssl=true,password=...");
+                ConnectionMultiplexer redis = ConnectionMultiplexer.Connect("localhost"); // change later
+                
+                IDatabase db = redis.GetDatabase(); // may need to change to server instead of db to scan server (use .Keys, which lets it pick between keys and scan (???) ) 
+                // means might not need a dictionary to store if all values returned are unique
+                IServer server = redis.GetServer(host: "localhost", port: 8080); // takes name value pair, i.e. "localhost", 6379
+
+                Dictionary<string, string> data = new Dictionary<string, string>();
+
+                // have to use scan instead of keys to not block current redis server
+                // no normal scan option. sscan for set? should just be scan, depends on structure of redis db
+                // plan to use dictionary to store all keys and values -- optimize later?
+                // use scan starting with cursor 0 and keep going until returned cursor is 0 again
+                // because duplicates may show up, need to check if key exists in storage dictionary
+                // if key does not exist, use mget to grab value for that key and add into storage dictionary
+                // notes: cursor is a string representing int, only returns elements present throughout the whole iteration
+
+                foreach (string key in server.Keys(pattern: "*")) // optimize?
+                {
+                    // perhaps check to see if present already in mongo and add only if not present?
+                    data.Add(key, db.StringGet(key));
+                }
+                
+                
+                
+            }
+    }
+}

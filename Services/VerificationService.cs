@@ -1,7 +1,4 @@
-using System.Buffers.Text;
 using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.VisualBasic;
 using MongoDB.Driver;
 using Rumble.Platform.Common.Web;
 using Rumble.Platform.ReceiptService.Models;
