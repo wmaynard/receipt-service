@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using MongoDB.Driver;
+using Newtonsoft.Json;
 using Rumble.Platform.Common.Web;
 using Rumble.Platform.ReceiptService.Models;
 using StackExchange.Redis;
@@ -12,8 +14,9 @@ namespace Rumble.Platform.ReceiptService.Services
 
         public RedisService() : base(collection: "receipts") { }
 
-        public void UpdateDatabase()
-            {
+        public int UpdateDatabase()
+        {
+            int counter = 0;
                 // ex for when working on actual server, use env variables
                 
                 // var conn = ConnectionMultiplexer.Connect("contoso5.redis.cache.windows.net:8909,ssl=true,password=...");
@@ -23,7 +26,7 @@ namespace Rumble.Platform.ReceiptService.Services
                 // means might not need a dictionary to store if all values returned are unique
                 IServer server = redis.GetServer(host: "localhost", port: 8080); // takes name value pair, i.e. "localhost", 6379
 
-                Dictionary<string, string> data = new Dictionary<string, string>();
+                // Dictionary<string, string> data = new Dictionary<string, string>(); only need if returned values from redis are not unique
 
                 // have to use scan instead of keys to not block current redis server
                 // no normal scan option. sscan for set? should just be scan, depends on structure of redis db
@@ -36,11 +39,20 @@ namespace Rumble.Platform.ReceiptService.Services
                 foreach (string key in server.Keys(pattern: "*")) // optimize?
                 {
                     // perhaps check to see if present already in mongo and add only if not present?
-                    data.Add(key, db.StringGet(key));
+                    string keyFrag = key.Substring(17); // currently assumes only aos receipts, can parse if needed for other types
+
+                    Receipt entry = _collection.Find(receipt => receipt.OrderId == keyFrag).FirstOrDefault();
+                    if (entry == null)
+                    {
+                        string value = db.StringGet(key);
+                        Receipt newReceipt = JsonConvert.DeserializeObject<Receipt>(value);
+                        _collection.InsertOne(newReceipt);
+                        counter++;
+                        // data.Add(key, value); only need if returned values from redis are not unique
+                    }
                 }
-                
-                
-                
-            }
+
+                return counter;
+        }
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using MongoDB.Libmongocrypt;
 using Rumble.Platform.Common.Utilities;
 using Rumble.Platform.Common.Web;
 using Rumble.Platform.ReceiptService.Models;
@@ -44,7 +45,17 @@ namespace Rumble.Platform.ReceiptService.Controllers
         [HttpGet, Route(template: "redis"), RequireAuth((TokenType.ADMIN))] // to be removed when no longer needed
         public ActionResult UpdateFromRedis()
         {
-            return Ok();
+            int counter = 0;
+            try
+            {
+                counter = _redisService.UpdateDatabase();
+            }
+            catch (Exception e)
+            {
+                Log.Error(owner: Owner.Nathan, message: $"Error occurred while attempting to update from Redis. {e.Message}.");
+                return Problem(detail: "Error occurred while attempting to update from Redis.");
+            }
+            return Ok(message: $"Data successfully fetched from Redis; {counter} new entries entered into Mongo.");
         }
 
         [HttpPost, Route(template: ""), RequireAuth(TokenType.ADMIN)]
