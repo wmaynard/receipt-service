@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using MongoDB.Driver;
 using Newtonsoft.Json;
 using Rumble.Platform.Common.Utilities;
@@ -46,7 +45,7 @@ namespace Rumble.Platform.ReceiptService.Services
                     // perhaps check to see if present already in mongo and add only if not present?
                     string keyFrag = key.Substring(17); // currently assumes only aos receipts, can parse if needed for other types
 
-                    Receipt entry = _collection.Find(receipt => receipt.OrderId == keyFrag).FirstOrDefault();
+                    Receipt entry = _collection.Find(filter: receipt => receipt.OrderId == keyFrag).FirstOrDefault();
                     if (entry == null)
                     {
                         string value = db.StringGet(key);

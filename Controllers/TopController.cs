@@ -2,7 +2,6 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using MongoDB.Libmongocrypt;
 using Rumble.Platform.Common.Utilities;
 using Rumble.Platform.Common.Web;
 using Rumble.Platform.ReceiptService.Models;
@@ -63,7 +62,8 @@ namespace Rumble.Platform.ReceiptService.Controllers
         {
             // the following are the current payload keys
             // if we need receipt to contain everything, perhaps key:receipt is not a receipt yet, but create receipt using these
-            // also optional string signature
+            // also optional string signature for android
+            
             string game = Require<string>(key: "game");
             string accountId = Require<string>(key: "account"); // gukey
             string channel = Require<string>(key: "channel");
@@ -160,9 +160,9 @@ namespace Rumble.Platform.ReceiptService.Controllers
                 }
             }
             
-            if (channel == "samsung") // additionally looks at playergukey(accountid?) for iosTestGroup_NoSaleOverride(?_
+            if (channel == "samsung") // old version additionally looks at playergukey(accountid?) for iosTestGroup_NoSaleOverride(?_
             {
-                validated = await _samsungService.VerifySamsung(receipt: receipt, accountId: accountId);
+                validated = await _samsungService.VerifySamsung(receipt: receipt);
                 
                 if (validated == null)
                 {

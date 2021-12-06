@@ -13,11 +13,12 @@ namespace Rumble.Platform.ReceiptService.Services
 {
     public class AppleService : VerificationService
     {
-        // apple specific looks at receipt and game
+        // apple specific looks at receipt
         // receipt is base64 encoded, supposedly fetched from app on device with NSBundle.appStoreReceiptURL
         // requires password
         // requires exclude-old-transactions if auto-renewable subscriptions
-        public async Task<VerificationResult> VerifyApple(Receipt receipt, string accountId = null, string signature = null)
+        // assuming no subscriptions for now, possible to put in later if needed
+        public async Task<VerificationResult> VerifyApple(Receipt receipt, string signature = null)
         {
             VerificationResult verification = null;
             AppleValidation verified = null;
@@ -34,7 +35,7 @@ namespace Rumble.Platform.ReceiptService.Services
                 }
                 catch (Exception exception)
                 {
-                    Log.Error(owner: Owner.Nathan, message: $"Failed to validate iTunes receipt against env sandbox. {e.Message}. Receipt {receipt.JSON}");
+                    Log.Error(owner: Owner.Nathan, message: $"Failed to validate iTunes receipt against env sandbox. {exception.Message}. Receipt {receipt.JSON}");
                 }
             }
 

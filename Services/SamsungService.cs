@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Json;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Rumble.Platform.Common.Utilities;
@@ -12,19 +10,19 @@ namespace Rumble.Platform.ReceiptService.Services
 {
     public class SamsungService : VerificationService
     {
-        // samsung specific looks at receipt, game, playergukey(accountid)? not actually used for now
-        public async Task<VerificationResult> VerifySamsung(Receipt receipt, string accountId = null, string signature = null)
+        // samsung specific looks at receipt, playergukey(accountid)? used in old ver for testing
+        public async Task<VerificationResult> VerifySamsung(Receipt receipt, string signature = null)
         {
             VerificationResult verification = null;
             SamsungValidation verified = null;
             
             try
             {
-                verified = await VerifySamsungData(receipt: receipt, accountId: accountId);
+                verified = await VerifySamsungData(receipt: receipt);
             }
             catch (Exception e)
             {
-                Log.Error(owner: Owner.Nathan, message: $"Failed to validate Samsung receipt. Receipt {receipt.JSON}");
+                Log.Error(owner: Owner.Nathan, message: $"Failed to validate Samsung receipt. {e.Message}. Receipt {receipt.JSON}");
             }
 
             if (verified?.Status == "true")
@@ -57,7 +55,7 @@ namespace Rumble.Platform.ReceiptService.Services
             return verification;
         }
         
-        public async Task<SamsungValidation> VerifySamsungData(Receipt receipt, string accountId)
+        public async Task<SamsungValidation> VerifySamsungData(Receipt receipt)
         {
             SamsungValidation response = null;
             // POST request to the previously used url for kingsroad gives a 405 method not allowed
@@ -66,22 +64,23 @@ namespace Rumble.Platform.ReceiptService.Services
             string reqUriRoot = PlatformEnvironment.Variable(name: "samsungVerifyReceiptUrl");
             string reqUri = reqUriRoot + receipt.OrderId;
 
+            // the following is old version
+            /*
             string receiptString = receipt.JSON;
             string protocolVersion = "2.0";
 
             Dictionary<string, string> reqObj = new Dictionary<string, string>
             {
-                // this is the structure of the outdated service, yes purchase id takes receipt in string form (why?)
-                // not needed if get
+                // yes purchase id takes receipt in string form in the old version (why?)
                 {"purchaseID", receiptString},
                 {"protocolVersion", protocolVersion}
             };
 
             string reqJson = JsonConvert.SerializeObject(reqObj);
-
             JsonContent reqData = JsonContent.Create(reqJson);
+            HttpResponseMessage httpResponse = await client.PostAsync(requestUri: reqUri, content: reqData);
+            */
             
-            // HttpResponseMessage httpResponse = await client.PostAsync(requestUri: reqUri, content: reqData); // post
             HttpResponseMessage httpResponse = await client.GetAsync(requestUri: reqUri); // get
             // TODO
             // will require a valid samsung receipt to test

@@ -5,6 +5,10 @@ namespace Rumble.Platform.ReceiptService.Models
 {
     public class SamsungValidation : Validation
     {
+        // TODO
+        // flush out with correct response
+        // appears to have a paymentId(transactionid), itemId(offerid) based on old version
+        
         internal const string DB_KEY_STATUS = "status";
 
         public const string FRIENDLY_KEY_STATUS = "status";
