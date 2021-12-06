@@ -52,7 +52,7 @@ namespace Rumble.Platform.ReceiptService.Services
                     receiptData: receipt.JSON,
                     timestamp: receipt.PurchaseTime
                 );
-                Log.Error(owner: Owner.Nathan, message: $"Failure to validate Samsung receipt. Receipt: {receipt.JSON}");
+                Log.Error(owner: Owner.Nathan, message: $"Failed to validate Samsung receipt. Receipt: {receipt.JSON}");
             }
             return verification;
         }
@@ -61,13 +61,18 @@ namespace Rumble.Platform.ReceiptService.Services
         {
             SamsungValidation response = null;
             // POST request to the previously used url for kingsroad gives a 405 method not allowed
-            string reqUri = PlatformEnvironment.Variable(name: "samsungVerifyReceiptUrl");
+            // new one appears to be https://iap.samsungapps.com/iap/v6/receipt?purchaseID={PurchaseId}, but not specified if get/post, assume get cause of id in link
+            // purchase id might be orderid?
+            string reqUriRoot = PlatformEnvironment.Variable(name: "samsungVerifyReceiptUrl");
+            string reqUri = reqUriRoot + receipt.OrderId;
 
             string receiptString = receipt.JSON;
             string protocolVersion = "2.0";
 
             Dictionary<string, string> reqObj = new Dictionary<string, string>
             {
+                // this is the structure of the outdated service, yes purchase id takes receipt in string form (why?)
+                // not needed if get
                 {"purchaseID", receiptString},
                 {"protocolVersion", protocolVersion}
             };
@@ -76,7 +81,8 @@ namespace Rumble.Platform.ReceiptService.Services
 
             JsonContent reqData = JsonContent.Create(reqJson);
             
-            HttpResponseMessage httpResponse = await client.PostAsync(requestUri: reqUri, content: reqData);
+            // HttpResponseMessage httpResponse = await client.PostAsync(requestUri: reqUri, content: reqData); // post
+            HttpResponseMessage httpResponse = await client.GetAsync(requestUri: reqUri); // get
             // TODO
             // will require a valid samsung receipt to test
             if (httpResponse.StatusCode == HttpStatusCode.OK)

@@ -90,10 +90,16 @@ namespace Rumble.Platform.ReceiptService.Controllers
                 // json receipt (json) of receipt sent for verification
                 // int status (0, status code) 0 if valid, status code if error; see https://developer.apple.com/documentation/appstorereceipts/status for status codes
                 
-                if (validated == null || validated.Status == "failed")
+                if (validated == null)
                 {
                     Log.Error(owner: Owner.Nathan, message: $"Error validating Apple receipt. Receipt: {receipt.JSON}");
                     return Problem(detail: "Error validating Apple receipt.");
+                }
+
+                if (validated.Status == "failed")
+                {
+                    Log.Error(owner: Owner.Nathan, message: $"Failed to validate Apple receipt. Order does not exist. Receipt: {receipt.JSON}");
+                    return Problem(detail: "Failed to validate Apple receipt.");
                 }
                 if (validated.Status == "success")
                 {
@@ -101,6 +107,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
                     
                     if (_appleService.Exists(receipt.OrderId))
                     {
+                        Log.Error(owner: Owner.Nathan, message: $"Apple receipt has already been redeemed. Receipt: {receipt.JSON}");
                         return Problem(detail: "Receipt has already been redeemed.");
                     }
                     
@@ -111,7 +118,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
                     }
                     catch (Exception e)
                     {
-                        Log.Error(owner: Owner.Nathan, message: $"Failed to record Apple receipt information. Receipt: {receipt.JSON}");
+                        Log.Error(owner: Owner.Nathan, message: $"Failed to record Apple receipt information. {e.Message}. Receipt: {receipt.JSON}");
                     }
                 }
                 
@@ -120,10 +127,15 @@ namespace Rumble.Platform.ReceiptService.Controllers
             {
                 string signature = Require<string>(key: "signature");
                 validated = _googleService.VerifyGoogle(receipt: receipt, signature: signature);
-                
-                if (validated == null || validated.Status == "failed")
+
+                if (validated == null)
                 {
-                    Log.Error(owner: Owner.Nathan, message: $"Failed to validate Google receipt: verification returned false.  Receipt: {receipt.JSON}");
+                    Log.Error(owner: Owner.Nathan, message: $"Error validating Google receipt. Receipt: {receipt.JSON}");
+                    return Problem(detail: "Error validating Google receipt.");
+                }
+                if (validated.Status == "failed")
+                {
+                    Log.Error(owner: Owner.Nathan, message: $"Failed to validate Google receipt. Order does not exist. Receipt: {receipt.JSON}");
                     return Problem(detail: "Failed to validate Google receipt.");
                 }
                 if (validated.Status == "success")
@@ -132,6 +144,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
                     
                     if (_googleService.Exists(receipt.OrderId))
                     {
+                        Log.Error(owner: Owner.Nathan, message: $"Google receipt has already been redeemed. Receipt: {receipt.JSON}");
                         return Problem(detail: "Receipt has already been redeemed.");
                     }
                     
@@ -142,7 +155,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
                     }
                     catch (Exception e)
                     {
-                        Log.Error(owner: Owner.Nathan, message: $"Failed to record Google receipt information. Receipt: {receipt.JSON}");
+                        Log.Error(owner: Owner.Nathan, message: $"Failed to record Google receipt information. {e.Message}. Receipt: {receipt.JSON}");
                     }
                 }
             }
@@ -151,10 +164,16 @@ namespace Rumble.Platform.ReceiptService.Controllers
             {
                 validated = await _samsungService.VerifySamsung(receipt: receipt, accountId: accountId);
                 
-                if (validated == null || validated.Status == "failed")
+                if (validated == null)
                 {
-                    Log.Error(owner: Owner.Nathan, message: $"Error validating Samsung receipt.  Receipt: {receipt.JSON}");
+                    Log.Error(owner: Owner.Nathan, message: $"Error validating Samsung receipt. Receipt: {receipt.JSON}");
                     return Problem(detail: "Error validating Samsung receipt.");
+                }
+
+                if (validated.Status == "failed")
+                {
+                    Log.Error(owner: Owner.Nathan, message: $"Failed to validate Samsung receipt. Order does not exist. Receipt: {receipt.JSON}");
+                    return Problem(detail: "Failed to validate Samsung receipt.");
                 }
                 if (validated.Status == "success")
                 {
@@ -162,6 +181,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
                     
                     if (_samsungService.Exists(receipt.OrderId))
                     {
+                        Log.Error(owner: Owner.Nathan, message: $"Samsung receipt has already been redeemed. Receipt: {receipt.JSON}");
                         return Problem(detail: "Receipt has already been redeemed.");
                     }
                     
@@ -172,7 +192,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
                     }
                     catch (Exception e)
                     {
-                        Log.Error(owner: Owner.Nathan, message: $"Failed to record Samsung receipt information. Receipt: {receipt.JSON}");
+                        Log.Error(owner: Owner.Nathan, message: $"Failed to record Samsung receipt information. ${e.Message}. Receipt: {receipt.JSON}");
                     }
                 }
             }
