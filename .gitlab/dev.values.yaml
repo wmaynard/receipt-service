@@ -51,8 +51,8 @@ service:
   url: https://dev.nonprod.tower.cdrentertainment.com/
   additionalHosts:
   commonName: dev.nonprod.tower.cdrentertainment.com
-  externalPort: 80
-  internalPort: 8080
+  externalPort: 5001
+  internalPort: 80
 ingress:
   enabled: true
   paths: 

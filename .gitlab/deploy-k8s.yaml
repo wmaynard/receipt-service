@@ -41,6 +41,7 @@ stage-a:
     - if: '$CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH'
       when: never
     - if: '$STAGING_ENABLED'
+      when: manual
 
 stage-b:
   extends: .auto-deploy
@@ -61,4 +62,4 @@ stage-b:
     - if: '$CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH'
       when: never
     - if: '$STAGING_ENABLED'
-
+      when: manual
