@@ -27,8 +27,6 @@ variables:
   K8S_SECRET_GOOGLE_APP_SECRET: "$GOOGLE_APP_SECRET"
   K8S_SECRET_MONGODB_NAME: "$MONGODB_NAME"
   K8S_SECRET_MONGODB_URI: "$MONGODB_URI"
-  K8S_SECRET_MONGODB_USER: "$MONGODB_USER"
-  K8S_SECRET_MONGODB_PASSWORD: "$MONGODB_PASSWORD"
   K8S_SECRET_androidStoreKey: "$androidStoreKey"
   K8S_SECRET_iosVerifyReceiptSandbox: "$iosVerifyReceiptSandbox"
   K8S_SECRET_iosVerifyReceiptUrl: "$iosVerifyReceiptUrl"
