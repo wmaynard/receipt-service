@@ -78,19 +78,19 @@ ingress:
 prometheus:
   metrics: false
 livenessProbe:
-  path: "/health"
+  path: "/commerce/receipt/health"
   initialDelaySeconds: 15
   timeoutSeconds: 15
   scheme: "HTTP"
   probeType: "httpGet"
 readinessProbe:
-  path: "/health"
+  path: "/commerce/receipt/health"
   initialDelaySeconds: 5
   timeoutSeconds: 3
   scheme: "HTTP"
   probeType: "httpGet"
 startupProbe:
-  path: "/health"
+  path: "/commerce/receipt/health"
   failureThreshold: 30
   timeoutSeconds: 10
   scheme: "HTTP"
