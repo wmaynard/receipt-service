@@ -49,7 +49,7 @@ verify on a local server. The service also temporarily allows users to fetch `re
 | id | _Mongo_ identifier for a receipt. |
 
 # Using the Service
-All non-health endpoints require a valid admin token from `token-service`.
+All non-health endpoints require a valid token from `token-service`.
 Requirements to these endpoints should have an `Authorization` header with a `Bearer {token}`, where token is the aforementioned admin token.
 
 All `timestamps` in the service are in the format of a `Unix timestamp`. This is to allow consistency and reduce confusion between time zones.

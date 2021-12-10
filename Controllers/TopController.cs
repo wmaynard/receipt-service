@@ -41,7 +41,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
             );
         }
 
-        [HttpGet, Route(template: "redis"), RequireAuth((TokenType.ADMIN))] // to be removed when no longer needed
+        [HttpGet, Route(template: "redis")] // to be removed when no longer needed
         public ActionResult UpdateFromRedis()
         {
             int counter;
@@ -57,7 +57,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
             return Ok(message: $"Data successfully fetched from Redis; {counter} new entries entered into Mongo.");
         }
 
-        [HttpPost, Route(template: ""), RequireAuth(TokenType.ADMIN)]
+        [HttpPost, Route(template: "")]
         public async Task<ObjectResult> ReceiptVerify()
         {
             // the following are the current payload keys
