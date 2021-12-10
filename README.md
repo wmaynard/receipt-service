@@ -38,7 +38,7 @@ verify on a local server. The service also temporarily allows users to fetch `re
 | Receipt | Contains the data relevant to the purchase to be verified. |
 | game | Information to determine what `game` the `receipt` is for. For now, only `tower` is accepted. |
 | account | `Account ID` for the account performing the purchase. Not currently in use but required for the future. |
-| channel | Determines which App store to verify with. This can be `ios`, `,googlePlay`, or `samsung`. |
+| channel | Determines which App store to verify with. This can be `ios`, `aos`, or `samsung`. |
 | orderId | Unique identifier for the `receipt`. Used by the services to verify with the appropriate App stores. |
 | packageName | Identifier for the product on the App store. |
 | productId | Identifier for the product or item that was purchased. |
@@ -74,7 +74,7 @@ A `Receipt` is structured the same way for all three services and are transforme
 {
     "game": "tower",
     "account": "6140bd998caf79f468e6f8a6",
-    "channel": "googlePlay",
+    "channel": "aos",
     "receipt": {
         "orderId": "GPA.3383-6680-9846-20466",
         "packageName": "com.rumbleentertainment.towerdefense",

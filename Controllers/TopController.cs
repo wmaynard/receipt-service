@@ -123,7 +123,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
                 }
                 
             }
-            if (channel == "googlePlay") // additionally looks at signature
+            if (channel == "aos") // additionally looks at signature
             {
                 string signature = Require<string>(key: "signature");
                 validated = _googleService.VerifyGoogle(receipt: receipt, signature: signature);
