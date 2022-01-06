@@ -63,8 +63,16 @@ namespace Rumble.Platform.ReceiptService.Controllers
             // the following are the current payload keys
             // if we need receipt to contain everything, perhaps key:receipt is not a receipt yet, but create receipt using these
             // also optional string signature for android
-            
-            string game = Require<string>(key: "game");
+
+            string game = null;
+            try
+            {
+                game = Require<string>(key: "game");
+            }
+            catch (Exception e)
+            {
+                Log.Error(owner: Owner.Nathan, message: $"Error fetching game. {e.Message}");
+            }
             string accountId = Require<string>(key: "account"); // gukey
             string channel = Require<string>(key: "channel");
             Receipt receipt = Require<Receipt>(key: "receipt"); // is stringified in the request
@@ -72,7 +80,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
             
             Log.Info(owner: Owner.Nathan, message: $"Receipt validation request: game: {game}, accountId: {accountId}, channel: {channel}, receipt: {receipt.JSON}");
 
-            if (game != "tower") // assume rewrite is only for tower atm?
+            if (game != "57901c6df82a45708018ba73b8d16004") // this is only for dev, different for each environment. fetch from dynamic config
             {
                 return Problem(detail: $"Invalid game {game}.");
             }

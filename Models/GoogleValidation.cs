@@ -21,6 +21,7 @@ namespace Rumble.Platform.ReceiptService.Models
         internal const string DB_KEY_PURCHASE_TIME = "purchTime";
         internal const string DB_KEY_PURCHASE_STATE = "purchState";
         internal const string DB_KEY_PURCHASE_TOKEN = "purchTkn";
+        internal const string DB_KEY_ACKNOWLEDGED = "acklged";
 
         public const string FRIENDLY_KEY_ORDER_ID = "orderID";
         public const string FRIENDLY_KEY_PACKAGE_NAME = "packageName";
@@ -28,6 +29,7 @@ namespace Rumble.Platform.ReceiptService.Models
         public const string FRIENDLY_KEY_PURCHASE_TIME = "purchaseTime";
         public const string FRIENDLY_KEY_PURCHASE_STATE = "purchaseState";
         public const string FRIENDLY_KEY_PURCHASE_TOKEN = "purchaseToken";
+        public const string FRIENDLY_KEY_ACKNOWLEDGED = "acknowledged";
         
         [BsonElement(DB_KEY_ORDER_ID)]
         [JsonInclude, JsonPropertyName(FRIENDLY_KEY_ORDER_ID)]
@@ -52,9 +54,13 @@ namespace Rumble.Platform.ReceiptService.Models
         [BsonElement(DB_KEY_PURCHASE_TOKEN)]
         [JsonInclude, JsonPropertyName(FRIENDLY_KEY_PURCHASE_TOKEN)]
         public string PurchaseToken { get; private set; }
+        
+        [BsonElement(DB_KEY_ACKNOWLEDGED)]
+        [JsonInclude, JsonPropertyName(FRIENDLY_KEY_ACKNOWLEDGED)]
+        public bool Acknowledged { get; private set; }
 
         public GoogleValidation(string orderId, string packageName, string productId, long purchaseTime,
-            int purchaseState, string purchaseToken)
+            int purchaseState, string purchaseToken, bool acknowledged)
         {
             OrderId = orderId;
             PackageName = packageName;
@@ -62,6 +68,7 @@ namespace Rumble.Platform.ReceiptService.Models
             PurchaseTime = purchaseTime;
             PurchaseState = purchaseState;
             PurchaseToken = purchaseToken;
+            Acknowledged = acknowledged;
         }
     }
 }
