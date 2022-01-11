@@ -9,7 +9,7 @@ using Rumble.Platform.ReceiptService.Services;
 
 namespace Rumble.Platform.ReceiptService.Controllers
 {
-    [ApiController, Route(template: "commerce/receipt"), RequireAuth]
+    [ApiController, Route(template: "commerce/receipt"), RequireAuth, UseMongoTransaction]
     public class TopController : PlatformController
     {
         private readonly AppleService _appleService;

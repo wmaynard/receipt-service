@@ -62,9 +62,9 @@ All endpoints are reached with the base route `/commerce/receipt/`. Any followin
 ## Top Level
 | Method | Endpoint | Description | Required Parameters | Google-specific Parameters |
 | ---: | :--- | :--- | :--- | :--- |
-| GET | `/health` | Health check on the status of the following services: `AppleService`, `GoogleService`, `SamsungService`, `RedisService` |  |  |
-| POST | `/` | Submit a `receipt` with other required information to be verified. | *string*`game`<br />*string*`account`<br />*string*`channel`<br />*Receipt*`receipt` | *string*`signature` |
-| GET | `/redis` | Fetch all entries in the current _Redis_ database and migrate them over to _Mongo_ |  |  |
+| GET | `/health` | **INTERNAL** Health check on the status of the following services: `AppleService`, `GoogleService`, `SamsungService`, `RedisService` |  |  |
+| POST | `/` | **INTERNAL** Submit a `receipt` with other required information to be verified. | *string*`game`<br />*string*`account`<br />*string*`channel`<br />*Receipt*`receipt` | *string*`signature` |
+| GET | `/redis` | **INTERNAL** Fetch all entries in the current _Redis_ database and migrate them over to _Mongo_ |  |  |
 
 ### Notes
 A `Receipt` is structured the same way for all three services and are transformed according to what the external APIs require.

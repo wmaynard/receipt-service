@@ -53,7 +53,7 @@ namespace Rumble.Platform.ReceiptService.Services
             
             // byte[] keyBytes = Encoding.UTF8.GetBytes(PlatformEnvironment.Variable(name: "androidStoreKey"));
             byte[] keyBytes = Convert.FromBase64String(PlatformEnvironment.Variable(name: "androidStoreKey"));
-
+            
             // AsymmetricKeyParameter asymmetricKeyParameter = PublicKeyFactory.CreateKey(keyBytes);
             // RsaKeyParameters rsaKeyParameters = (RsaKeyParameters) asymmetricKeyParameter;
             
