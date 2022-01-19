@@ -22,7 +22,7 @@ namespace Rumble.Platform.ReceiptService.Services
             }
             catch (Exception e)
             {
-                Log.Error(owner: Owner.Nathan, message: $"Failed to validate Samsung receipt. {e.Message}. Receipt {receipt.JSON}");
+                Log.Error(owner: Owner.Nathan, message: "Failed to validate Samsung receipt.", data: $"{e.Message}. Receipt: {receipt.JSON}");
             }
 
             if (verified?.Status == "true")
@@ -50,7 +50,7 @@ namespace Rumble.Platform.ReceiptService.Services
                     receiptData: receipt.JSON,
                     timestamp: receipt.PurchaseTime
                 );
-                Log.Error(owner: Owner.Nathan, message: $"Failed to validate Samsung receipt. Receipt: {receipt.JSON}");
+                Log.Error(owner: Owner.Nathan, message: "Failed to validate Samsung receipt.", data: $"Receipt: {receipt.JSON}");
             }
             return verification;
         }

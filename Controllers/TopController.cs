@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using Rumble.Platform.Common.Utilities;
 using Rumble.Platform.Common.Web;
 using Rumble.Platform.ReceiptService.Models;
@@ -51,7 +52,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
             }
             catch (Exception e)
             {
-                Log.Error(owner: Owner.Nathan, message: $"Error occurred while attempting to update from Redis. {e.Message}.");
+                Log.Error(owner: Owner.Nathan, message: "Error occurred while attempting to update from Redis.", data: $"{e.Message}.");
                 return Problem(detail: "Error occurred while attempting to update from Redis.");
             }
             return Ok(message: $"Data successfully fetched from Redis; {counter} new entries entered into Mongo.");
@@ -71,14 +72,17 @@ namespace Rumble.Platform.ReceiptService.Controllers
             }
             catch (Exception e)
             {
-                Log.Error(owner: Owner.Nathan, message: $"Error fetching game. {e.Message}");
+                Log.Error(owner: Owner.Nathan, message: "Error fetching game.", data: $"{e.Message}");
             }
             string accountId = Require<string>(key: "account"); // gukey
             string channel = Require<string>(key: "channel");
-            Receipt receipt = Require<Receipt>(key: "receipt"); // is stringified in the request
+            string receiptData = Require<string>(key: "receipt"); // is stringified in the request
+            Receipt receipt = JsonConvert.DeserializeObject<Receipt>(receiptData);
+            
             VerificationResult validated = null;
             
-            Log.Info(owner: Owner.Nathan, message: $"Receipt validation request: game: {game}, accountId: {accountId}, channel: {channel}, receipt: {receipt.JSON}");
+            Log.Info(owner: Owner.Nathan, message: $"Receipt validation request", data: $"game: {game}, accountId: {accountId}, channel: {channel}, receiptData: {receiptData}");
+            Log.Info(owner: Owner.Nathan, message: $"Receipt parsed from receipt data", data: $"Receipt: {receipt}");
 
             if (game != "57901c6df82a45708018ba73b8d16004") // this is only for dev, different for each environment. fetch from dynamic config
             {
@@ -100,33 +104,33 @@ namespace Rumble.Platform.ReceiptService.Controllers
                 
                 if (validated == null)
                 {
-                    Log.Error(owner: Owner.Nathan, message: $"Error validating Apple receipt. Receipt: {receipt.JSON}");
+                    Log.Error(owner: Owner.Nathan, message: "Error validating Apple receipt.", data: $"Receipt: {receipt?.JSON}");
                     return Problem(detail: "Error validating Apple receipt.");
                 }
 
                 if (validated.Status == "failed")
                 {
-                    Log.Error(owner: Owner.Nathan, message: $"Failed to validate Apple receipt. Order does not exist. Receipt: {receipt.JSON}");
+                    Log.Error(owner: Owner.Nathan, message: "Failed to validate Apple receipt. Order does not exist.", data: $"Receipt: {receipt?.JSON}");
                     return Problem(detail: "Failed to validate Apple receipt.");
                 }
                 if (validated.Status == "success")
                 {
                     Log.Info(owner: Owner.Nathan, message: "Successful Apple receipt processed.");
                     
-                    if (_appleService.Exists(receipt.OrderId))
+                    if (_appleService.Exists(receipt?.OrderId))
                     {
-                        Log.Error(owner: Owner.Nathan, message: $"Apple receipt has already been redeemed. Receipt: {receipt.JSON}");
+                        Log.Error(owner: Owner.Nathan, message: "Apple receipt has already been redeemed.", data: $"Receipt: {receipt?.JSON}");
                         return Problem(detail: "Receipt has already been redeemed.");
                     }
                     
                     try
                     {
                         _appleService.Create(receipt);
-                        return Ok(receipt.ResponseObject);
+                        return Ok(receipt?.ResponseObject);
                     }
                     catch (Exception e)
                     {
-                        Log.Error(owner: Owner.Nathan, message: $"Failed to record Apple receipt information. {e.Message}. Receipt: {receipt.JSON}");
+                        Log.Error(owner: Owner.Nathan, message: "Failed to record Apple receipt information.", data: $"{e.Message}. Receipt: {receipt?.JSON}");
                     }
                 }
                 
@@ -138,32 +142,32 @@ namespace Rumble.Platform.ReceiptService.Controllers
 
                 if (validated == null)
                 {
-                    Log.Error(owner: Owner.Nathan, message: $"Error validating Google receipt. Receipt: {receipt.JSON}");
+                    Log.Error(owner: Owner.Nathan, message: "Error validating Google receipt.", data: $"Receipt: {receipt?.JSON}");
                     return Problem(detail: "Error validating Google receipt.");
                 }
                 if (validated.Status == "failed")
                 {
-                    Log.Error(owner: Owner.Nathan, message: $"Failed to validate Google receipt. Order does not exist. Receipt: {receipt.JSON}");
+                    Log.Error(owner: Owner.Nathan, message: "Failed to validate Google receipt. Order does not exist.", data: $"Receipt: {receipt?.JSON}");
                     return Problem(detail: "Failed to validate Google receipt.");
                 }
                 if (validated.Status == "success")
                 {
                     Log.Info(owner: Owner.Nathan, message: "Successful Google receipt processed.");
                     
-                    if (_googleService.Exists(receipt.OrderId))
+                    if (_googleService.Exists(receipt?.OrderId))
                     {
-                        Log.Error(owner: Owner.Nathan, message: $"Google receipt has already been redeemed. Receipt: {receipt.JSON}");
+                        Log.Error(owner: Owner.Nathan, message: "Google receipt has already been redeemed.", data: $"Receipt: {receipt?.JSON}");
                         return Problem(detail: "Receipt has already been redeemed.");
                     }
                     
                     try
                     {
                         _googleService.Create(receipt);
-                        return Ok(receipt.ResponseObject);
+                        return Ok(receipt?.ResponseObject);
                     }
                     catch (Exception e)
                     {
-                        Log.Error(owner: Owner.Nathan, message: $"Failed to record Google receipt information. {e.Message}. Receipt: {receipt.JSON}");
+                        Log.Error(owner: Owner.Nathan, message: "Failed to record Google receipt information.", data: $"{e.Message}. Receipt: {receipt?.JSON}");
                     }
                 }
             }
@@ -174,22 +178,22 @@ namespace Rumble.Platform.ReceiptService.Controllers
                 
                 if (validated == null)
                 {
-                    Log.Error(owner: Owner.Nathan, message: $"Error validating Samsung receipt. Receipt: {receipt.JSON}");
+                    Log.Error(owner: Owner.Nathan, message: "Error validating Samsung receipt.", data: $"Receipt: {receipt?.JSON}");
                     return Problem(detail: "Error validating Samsung receipt.");
                 }
 
                 if (validated.Status == "failed")
                 {
-                    Log.Error(owner: Owner.Nathan, message: $"Failed to validate Samsung receipt. Order does not exist. Receipt: {receipt.JSON}");
+                    Log.Error(owner: Owner.Nathan, message: "Failed to validate Samsung receipt. Order does not exist.", data: $"Receipt: {receipt?.JSON}");
                     return Problem(detail: "Failed to validate Samsung receipt.");
                 }
                 if (validated.Status == "success")
                 {
                     Log.Info(owner: Owner.Nathan, message: "Successful Samsung receipt processed.");
                     
-                    if (_samsungService.Exists(receipt.OrderId))
+                    if (_samsungService.Exists(receipt?.OrderId))
                     {
-                        Log.Error(owner: Owner.Nathan, message: $"Samsung receipt has already been redeemed. Receipt: {receipt.JSON}");
+                        Log.Error(owner: Owner.Nathan, message: "Samsung receipt has already been redeemed.", data: $"Receipt: {receipt?.JSON}");
                         return Problem(detail: "Receipt has already been redeemed.");
                     }
                     
@@ -200,7 +204,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
                     }
                     catch (Exception e)
                     {
-                        Log.Error(owner: Owner.Nathan, message: $"Failed to record Samsung receipt information. ${e.Message}. Receipt: {receipt.JSON}");
+                        Log.Error(owner: Owner.Nathan, message: "Failed to record Samsung receipt information.", data: $"{e.Message}. Receipt: {receipt?.JSON}");
                     }
                 }
             }

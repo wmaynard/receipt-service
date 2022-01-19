@@ -20,19 +20,19 @@ namespace Rumble.Platform.ReceiptService.Services
 
             if (transactionId == null)
             {
-                Log.Error(owner: Owner.Nathan, message: $"Failed to verify Google receipt. No orderId. Receipt {receipt.JSON}");
+                Log.Error(owner: Owner.Nathan, message: "Failed to verify Google receipt. No orderId.", data: $"Receipt: {receipt.JSON}");
                 return null;
             }
 
             if (offerId == null)
             {
-                Log.Error(owner: Owner.Nathan, message: $"Failed to verify Google receipt. No product ID. Receipt {receipt.JSON}");
+                Log.Error(owner: Owner.Nathan, message: "Failed to verify Google receipt. No product ID.", data: $"Receipt: {receipt.JSON}");
                 return null;
             }
 
             if (signature == null)
             {
-                Log.Error(owner: Owner.Nathan, message: $"Failed to verify Google receipt. No signature. Receipt {receipt.JSON}");
+                Log.Error(owner: Owner.Nathan, message: "Failed to verify Google receipt. No signature.", data: $"Receipt: {receipt.JSON}");
                 return null;
             }
             
@@ -94,7 +94,7 @@ namespace Rumble.Platform.ReceiptService.Services
             }
             catch (Exception e)
             {
-                Log.Error(owner: Owner.Nathan, message: $"Error occured while attempting to verify Google receipt signature. {e.Message}. Receipt {receipt.JSON}");
+                Log.Error(owner: Owner.Nathan, message: "Error occured while attempting to verify Google receipt signature.", data: $"{e.Message}. Receipt: {receipt.JSON}");
                 return null;
             }
 
@@ -123,7 +123,7 @@ namespace Rumble.Platform.ReceiptService.Services
                     receiptData: receipt.JSON,
                     timestamp: receipt.PurchaseTime
                 );
-                Log.Error(owner: Owner.Nathan, message: $"Failure to validate Google receipt. Receipt: {receipt.JSON}");
+                Log.Error(owner: Owner.Nathan, message: "Failure to validate Google receipt.", data: $"Receipt: {receipt.JSON}");
             }
             
             return verification;
