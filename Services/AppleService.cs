@@ -35,7 +35,7 @@ namespace Rumble.Platform.ReceiptService.Services
                 }
                 catch (Exception exception)
                 {
-                    Log.Error(owner: Owner.Nathan, message: $"Failed to validate iTunes receipt against env sandbox. {exception.Message}. Receipt {receipt.JSON}");
+                    Log.Error(owner: Owner.Nathan, message: "Failed to validate iTunes receipt against env sandbox.", data: $"{exception.Message}. Receipt: {receipt.JSON}");
                 }
             }
 
@@ -64,7 +64,7 @@ namespace Rumble.Platform.ReceiptService.Services
                     receiptData: receipt.JSON,
                     timestamp: receipt.PurchaseTime
                 );
-                Log.Error(owner: Owner.Nathan, message: $"Failure to validate iTunes receipt. Receipt: {receipt.JSON}");
+                Log.Error(owner: Owner.Nathan, message: "Failure to validate iTunes receipt.", data: $"Receipt: {receipt.JSON}");
             }
             return verification;
         }
