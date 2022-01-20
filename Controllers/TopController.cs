@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -154,7 +155,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
                 {
                     Log.Info(owner: Owner.Nathan, message: "Successful Google receipt processed.");
                     
-                    if (_googleService.FindOne(filter: receipt => receipt.OrderId == validated.TransactionId) != null)
+                    if (_googleService.Find(filter: receipt => receipt.OrderId == validated.TransactionId).FirstOrDefault() != null)
                     {
                         Log.Error(owner: Owner.Nathan, message: "Google receipt has already been redeemed.", data: $"Receipt: {receipt?.JSON}");
                         return Problem(detail: "Receipt has already been redeemed.");
