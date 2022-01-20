@@ -154,7 +154,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
                 {
                     Log.Info(owner: Owner.Nathan, message: "Successful Google receipt processed.");
                     
-                    if (_googleService.Exists(receipt?.OrderId))
+                    if (_googleService.FindOne(filter: receipt => receipt.OrderId == validated.TransactionId) != null)
                     {
                         Log.Error(owner: Owner.Nathan, message: "Google receipt has already been redeemed.", data: $"Receipt: {receipt?.JSON}");
                         return Problem(detail: "Receipt has already been redeemed.");
