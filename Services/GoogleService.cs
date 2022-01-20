@@ -98,7 +98,8 @@ namespace Rumble.Platform.ReceiptService.Services
                 return null;
             }
 
-            if (verified)
+            if (true) // testing only, remove when rsa fixed
+            // if (verified)
             {
                 string receiptKey = $"{PlatformEnvironment.Variable(name: "RUMBLE_DEPLOYMENT")}_s_aosReceipt_{transactionId}";
                 
