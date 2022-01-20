@@ -79,6 +79,8 @@ namespace Rumble.Platform.ReceiptService.Controllers
             string channel = Require<string>(key: "channel");
             string receiptData = Require<string>(key: "receipt"); // is stringified in the request
             Receipt receipt = JsonConvert.DeserializeObject<Receipt>(receiptData);
+
+            // Receipt receipt = Require<Receipt>(key: "receipt");
             
             VerificationResult validated = null;
             
@@ -169,6 +171,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
                     catch (Exception e)
                     {
                         Log.Error(owner: Owner.Nathan, message: "Failed to record Google receipt information.", data: $"{e.Message}. Receipt: {receipt?.JSON}");
+                        return Problem(detail: "Failed to record Google receipt information.");
                     }
                 }
             }
@@ -210,7 +213,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
                 }
             }
             
-            Log.Error(owner: Owner.Nathan, message: "Receipt called with invalid channel. Please use \"ios\", \"googlePlay\", or \"samsung\" as the channel.");
+            Log.Error(owner: Owner.Nathan, message: "Receipt called with invalid channel. Please use \"ios\", \"aos\", or \"samsung\" as the channel.");
             return Problem(detail: $"Invalid channel {channel}.");
         }
     }
