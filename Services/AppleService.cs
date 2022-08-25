@@ -6,6 +6,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using RCL.Logging;
 using Rumble.Platform.Common.Utilities;
 using Rumble.Platform.ReceiptService.Models;
 
@@ -41,7 +42,7 @@ namespace Rumble.Platform.ReceiptService.Services
 
             if (verified?.Status == 0)
             {
-                string receiptKey = $"{PlatformEnvironment.Variable(name: "RUMBLE_DEPLOYMENT")}_s_iosReceipt_{receipt.OrderId}";
+                string receiptKey = $"{PlatformEnvironment.Require(key: "RUMBLE_DEPLOYMENT")}_s_iosReceipt_{receipt.OrderId}";
                 
                 verification = new VerificationResult(
                     status: "success",
@@ -73,11 +74,11 @@ namespace Rumble.Platform.ReceiptService.Services
         {
             AppleValidation response = null;
             string reqUri = env == "prod"
-                ? PlatformEnvironment.Variable(name: "iosVerifyReceiptUrl")
-                : PlatformEnvironment.Variable(name: "iosVerifyReceiptSandbox");
+                ? PlatformEnvironment.Require(key: "iosVerifyReceiptUrl")
+                : PlatformEnvironment.Require(key: "iosVerifyReceiptSandbox");
 
             byte[] receiptData = Encoding.UTF8.GetBytes(receipt.JSON);
-            string password = PlatformEnvironment.Variable(name: "sharedSecret");
+            string password = PlatformEnvironment.Require(key: "sharedSecret");
 
             Dictionary<string, object> reqObj = new Dictionary<string, object>
             {

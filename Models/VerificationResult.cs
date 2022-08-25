@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
-using Rumble.Platform.Common.Web;
+using Rumble.Platform.Common.Models;
 
 namespace Rumble.Platform.ReceiptService.Models
 {

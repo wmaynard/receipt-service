@@ -1,6 +1,6 @@
 using System.Net.Http;
 using MongoDB.Driver;
-using Rumble.Platform.Common.Web;
+using Rumble.Platform.Common.Services;
 using Rumble.Platform.ReceiptService.Models;
 
 namespace Rumble.Platform.ReceiptService.Services

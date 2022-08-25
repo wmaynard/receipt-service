@@ -1,7 +1,7 @@
 using MongoDB.Driver;
 using Newtonsoft.Json;
+using Rumble.Platform.Common.Services;
 using Rumble.Platform.Common.Utilities;
-using Rumble.Platform.Common.Web;
 using Rumble.Platform.ReceiptService.Models;
 using StackExchange.Redis;
 
@@ -19,9 +19,9 @@ namespace Rumble.Platform.ReceiptService.Services
             int counter = 0;
                 // ex for when working on actual server, use env variables
                 // var conn = ConnectionMultiplexer.Connect("contoso5.redis.cache.windows.net:8909,ssl=true,password=...");
-                string host = PlatformEnvironment.Variable(name: "REDIS_HOST");
-                string password = PlatformEnvironment.Variable(name: "REDIS_PASSWORD");
-                int port = int.Parse(PlatformEnvironment.Variable(name: "REDIS_PORT"));
+                string host = PlatformEnvironment.Require(key: "REDIS_HOST");
+                string password = PlatformEnvironment.Require(key: "REDIS_PASSWORD");
+                int port = int.Parse(PlatformEnvironment.Require(key: "REDIS_PORT"));
                 
                 // ConnectionMultiplexer redis = ConnectionMultiplexer.Connect("localhost"); // change later
                 ConnectionMultiplexer redis = ConnectionMultiplexer.Connect(configuration: $"{host}:{port},password={password}");

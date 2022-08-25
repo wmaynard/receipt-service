@@ -1,9 +1,7 @@
 using System;
 using System.Security.Cryptography;
 using System.Text;
-using Org.BouncyCastle.Crypto;
-using Org.BouncyCastle.Crypto.Parameters;
-using Org.BouncyCastle.Security;
+using RCL.Logging;
 using Rumble.Platform.Common.Utilities;
 using Rumble.Platform.ReceiptService.Models;
 
@@ -51,8 +49,8 @@ namespace Rumble.Platform.ReceiptService.Services
             // byte[] sigBytes = Encoding.UTF8.GetBytes(signature);
             byte[] sigBytes = Convert.FromBase64String(signature);
             
-            // byte[] keyBytes = Encoding.UTF8.GetBytes(PlatformEnvironment.Variable(name: "androidStoreKey"));
-            byte[] keyBytes = Convert.FromBase64String(PlatformEnvironment.Variable(name: "androidStoreKey"));
+            // byte[] keyBytes = Encoding.UTF8.GetBytes(PlatformEnvironment.Require(key: "androidStoreKey"));
+            byte[] keyBytes = Convert.FromBase64String(PlatformEnvironment.Require(key: "androidStoreKey"));
             
             // AsymmetricKeyParameter asymmetricKeyParameter = PublicKeyFactory.CreateKey(keyBytes);
             // RsaKeyParameters rsaKeyParameters = (RsaKeyParameters) asymmetricKeyParameter;
@@ -98,10 +96,10 @@ namespace Rumble.Platform.ReceiptService.Services
                 return null;
             }
 
-            if (true) // testing only, remove when rsa fixed
-            // if (verified)
+            // if (true) // testing only, remove when rsa fixed
+            if (verified)
             {
-                string receiptKey = $"{PlatformEnvironment.Variable(name: "RUMBLE_DEPLOYMENT")}_s_aosReceipt_{transactionId}";
+                string receiptKey = $"{PlatformEnvironment.Require(key: "RUMBLE_DEPLOYMENT")}_s_aosReceipt_{transactionId}";
                 
                 verification = new VerificationResult(
                     status: "success",

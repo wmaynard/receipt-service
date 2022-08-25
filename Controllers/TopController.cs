@@ -3,7 +3,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json;
+using RCL.Logging;
+using Rumble.Platform.Common.Attributes;
 using Rumble.Platform.Common.Utilities;
 using Rumble.Platform.Common.Web;
 using Rumble.Platform.ReceiptService.Models;
@@ -32,18 +33,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
             _redisService = redisService; // to be removed when no longer needed
         }
 
-        [HttpGet, Route(template: "health"), NoAuth]
-        public override ActionResult HealthCheck()
-        {
-            return Ok(
-                _appleService.HealthCheckResponseObject,
-                _googleService.HealthCheckResponseObject,
-                _samsungService.HealthCheckResponseObject,
-                _redisService.HealthCheckResponseObject // to be removed when no longer needed
-            );
-        }
-
-        [HttpGet, Route(template: "redis"), RequireAuth((TokenType.ADMIN))] // to be removed when no longer needed
+        [HttpGet, Route(template: "redis"), RequireAuth(AuthType.ADMIN_TOKEN)] // to be removed when no longer needed
         public ActionResult UpdateFromRedis()
         {
             int counter;
@@ -59,7 +49,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
             return Ok(message: $"Data successfully fetched from Redis; {counter} new entries entered into Mongo.");
         }
 
-        [HttpPost, Route(template: ""), RequireAuth(TokenType.ADMIN)]
+        [HttpPost, Route(template: ""), RequireAuth(AuthType.ADMIN_TOKEN)]
         public async Task<ObjectResult> ReceiptVerify()
         {
             // the following are the current payload keys
@@ -77,14 +67,14 @@ namespace Rumble.Platform.ReceiptService.Controllers
             }
             string accountId = Require<string>(key: "account"); // gukey
             string channel = Require<string>(key: "channel");
-            string receiptData = Require<string>(key: "receipt"); // is stringified in the request
-            Receipt receipt = JsonConvert.DeserializeObject<Receipt>(receiptData);
+            // string receiptData = Require<string>(key: "receipt"); // is stringified in the request
+            // Receipt receipt = JsonConvert.DeserializeObject<Receipt>(receiptData);
 
-            // Receipt receipt = Require<Receipt>(key: "receipt");
+            Receipt receipt = Require<Receipt>(key: "receipt");
             
             VerificationResult validated = null;
             
-            Log.Info(owner: Owner.Nathan, message: $"Receipt validation request", data: $"game: {game}, accountId: {accountId}, channel: {channel}, receiptData: {receiptData}");
+            // Log.Info(owner: Owner.Nathan, message: $"Receipt validation request", data: $"game: {game}, accountId: {accountId}, channel: {channel}, receiptData: {receiptData}");
             Log.Info(owner: Owner.Nathan, message: $"Receipt parsed from receipt data", data: $"Receipt: {receipt}");
 
             if (game != "57901c6df82a45708018ba73b8d16004") // this is only for dev, different for each environment. fetch from dynamic config
@@ -134,6 +124,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
                     catch (Exception e)
                     {
                         Log.Error(owner: Owner.Nathan, message: "Failed to record Apple receipt information.", data: $"{e.Message}. Receipt: {receipt?.JSON}");
+                        return Problem(detail: "Failed to record Apple receipt information.");
                     }
                 }
                 
@@ -209,6 +200,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
                     catch (Exception e)
                     {
                         Log.Error(owner: Owner.Nathan, message: "Failed to record Samsung receipt information.", data: $"{e.Message}. Receipt: {receipt?.JSON}");
+                        return Problem(detail: "Failed to record Samsung receipt information.");
                     }
                 }
             }

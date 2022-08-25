@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
-        <TargetFramework>net5.0</TargetFramework>
+        <TargetFramework>net6.0</TargetFramework>
         <RootNamespace>Rumble.Platform.ReceiptService</RootNamespace>
     </PropertyGroup>
 
@@ -15,7 +15,7 @@
       <PackageReference Include="MongoDB.Driver" Version="2.13.2" />
       <PackageReference Include="MongoDB.Driver.Core" Version="2.13.2" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-      <PackageReference Include="platform-csharp-common" Version="1.0.80" />
+      <PackageReference Include="platform-csharp-common" Version="1.1.57" />
       <PackageReference Include="StackExchange.Redis" Version="2.2.88" />
     </ItemGroup>
 

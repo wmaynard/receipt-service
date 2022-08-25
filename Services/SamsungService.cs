@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using RCL.Logging;
 using Rumble.Platform.Common.Utilities;
 using Rumble.Platform.ReceiptService.Models;
 
@@ -27,7 +28,7 @@ namespace Rumble.Platform.ReceiptService.Services
 
             if (verified?.Status == "true")
             {
-                string receiptKey = $"{PlatformEnvironment.Variable(name: "RUMBLE_DEPLOYMENT")}_s_samsungReceipt_{receipt.OrderId}";
+                string receiptKey = $"{PlatformEnvironment.Require(key: "RUMBLE_DEPLOYMENT")}_s_samsungReceipt_{receipt.OrderId}";
 
                 verification = new VerificationResult(
                     status: "success",
@@ -61,7 +62,7 @@ namespace Rumble.Platform.ReceiptService.Services
             // POST request to the previously used url for kingsroad gives a 405 method not allowed
             // new one appears to be https://iap.samsungapps.com/iap/v6/receipt?purchaseID={PurchaseId}, but not specified if get/post, assume get cause of id in link
             // purchase id might be orderid?
-            string reqUriRoot = PlatformEnvironment.Variable(name: "samsungVerifyReceiptUrl");
+            string reqUriRoot = PlatformEnvironment.Require(key: "samsungVerifyReceiptUrl");
             string reqUri = reqUriRoot + receipt.OrderId;
 
             // the following is old version
