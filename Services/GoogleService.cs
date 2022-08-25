@@ -83,7 +83,7 @@ namespace Rumble.Platform.ReceiptService.Services
             
             RSAPKCS1SignatureDeformatter rsaDeformatter = new RSAPKCS1SignatureDeformatter(rsa);
             rsaDeformatter.SetHashAlgorithm(strName: "SHA1");
-            bool verified = false;
+            bool verified;
             try
             {
                 // TODO try another receipt with a tested valid signature

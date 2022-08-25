@@ -12,7 +12,7 @@ using Rumble.Platform.ReceiptService.Services;
 
 namespace Rumble.Platform.ReceiptService.Controllers
 {
-    [ApiController, Route(template: "commerce/receipt"), RequireAuth, UseMongoTransaction]
+    [ApiController, Route(template: "commerce/receipt"), UseMongoTransaction]
     public class TopController : PlatformController
     {
         private readonly AppleService _appleService;
@@ -33,7 +33,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
             _redisService = redisService; // to be removed when no longer needed
         }
 
-        [HttpGet, Route(template: "redis"), RequireAuth(AuthType.ADMIN_TOKEN)] // to be removed when no longer needed
+        [HttpGet, Route(template: "redis")] // to be removed when no longer needed
         public ActionResult UpdateFromRedis()
         {
             int counter;
@@ -49,7 +49,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
             return Ok(message: $"Data successfully fetched from Redis; {counter} new entries entered into Mongo.");
         }
 
-        [HttpPost, Route(template: ""), RequireAuth(AuthType.ADMIN_TOKEN)]
+        [HttpPost, Route(template: "")]
         public async Task<ObjectResult> ReceiptVerify()
         {
             // the following are the current payload keys
@@ -75,7 +75,7 @@ namespace Rumble.Platform.ReceiptService.Controllers
             VerificationResult validated = null;
             
             // Log.Info(owner: Owner.Nathan, message: $"Receipt validation request", data: $"game: {game}, accountId: {accountId}, channel: {channel}, receiptData: {receiptData}");
-            Log.Info(owner: Owner.Nathan, message: $"Receipt parsed from receipt data", data: $"Receipt: {receipt}");
+            Log.Info(owner: Owner.Nathan, message: $"Receipt parsed from receipt data", data: $"Receipt: {receipt.JSON}");
 
             if (game != "57901c6df82a45708018ba73b8d16004") // this is only for dev, different for each environment. fetch from dynamic config
             {

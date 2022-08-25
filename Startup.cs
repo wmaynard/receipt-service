@@ -8,6 +8,6 @@ public class Startup : PlatformStartup
   protected override PlatformOptions Configure(PlatformOptions options) => options
    .SetProjectOwner(Owner.Nathan)
    .SetRegistrationName("ReceiptV2")
-   .SetPerformanceThresholds(warnMS: 500, errorMS: 2_000, criticalMS: 30_000)
+   .SetPerformanceThresholds(warnMS: 5_000, errorMS: 20_000, criticalMS: 300_000)
    .DisableServices(CommonService.Config);
 }
