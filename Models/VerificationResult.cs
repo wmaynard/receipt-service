@@ -24,31 +24,33 @@ public class VerificationResult : PlatformDataModel
     
     [BsonElement(DB_KEY_STATUS)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_STATUS)]
-    public string Status { get; private set; }
+    public string Status { get; set; }
     
     [BsonElement(DB_KEY_RESPONSE)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_RESPONSE)]
-    public Receipt Response { get; private set; }
+    public Receipt Response { get; set; }
 
     [BsonElement(DB_KEY_TRANSACTION_ID)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_TRANSACTION_ID)]
-    public string TransactionId { get; private set; }
+    public string TransactionId { get; set; }
 
     [BsonElement(DB_KEY_OFFER_ID)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_OFFER_ID)]
-    public string OfferId { get; private set; }
+    public string OfferId { get; set; }
 
     [BsonElement(DB_KEY_RECEIPT_KEY)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_RECEIPT_KEY)]
-    public string ReceiptKey { get; private set; }
+    public string ReceiptKey { get; set; }
 
     [BsonElement(DB_KEY_RECEIPT_DATA)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_RECEIPT_DATA)]
-    public string ReceiptData { get; private set; }
+    public string ReceiptData { get; set; }
 
     [BsonElement(DB_KEY_TIMESTAMP)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_TIMESTAMP)]
-    public long Timestamp { get; private set; }
+    public long Timestamp { get; set; }
+    
+    public VerificationResult(){}
 
     public VerificationResult(string status, Receipt response, string transactionId, string offerId, string receiptKey, string receiptData, long timestamp)
     {

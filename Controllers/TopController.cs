@@ -25,7 +25,7 @@ public class TopController : PlatformController
     private readonly RedisService _redisService; // to be removed when no longer needed
 #pragma warning restore
 
-    [HttpGet, Route(template: "redis")] // to be removed when no longer needed
+    [HttpGet, Route(template: "redis"), RequireAuth(AuthType.ADMIN_TOKEN)] // to be removed when no longer needed
     public ActionResult UpdateFromRedis()
     {
         int counter;
@@ -42,7 +42,7 @@ public class TopController : PlatformController
     }
 
     [HttpPost, Route(template: "")]
-    public async Task<ObjectResult> ReceiptVerify()
+    public ObjectResult ReceiptVerify()
     {
         string accountId = Require<string>(key: "account");
         string channel = Require<string>(key: "channel");
@@ -75,54 +75,36 @@ public class TopController : PlatformController
 
     private VerificationResult ValidateApple(Receipt receipt, string signature)
     {
-        throw new NotImplementedException();
         
-        //
-        // VerificationResult validated = null;
-        // validated = await _appleService.VerifyApple(receipt: receipt);
-        //     
-        // // response from apple
-        // // string environment (Production, Sandbox)
-        // // boolean is-retryable (0, 1) for status codes 21100-21199, 1 means try again, 0 means do not
-        // // byte latest_receipt (base64 encoded receipt) only for auto-renewable subscriptions
-        // // list latest_receipt_info (purchase transactions) only for auto-renewable subscriptions, does not include finished products
-        // // list pending_renewal_info (pending renewal information) only for auto-renewable subscriptions
-        // // json receipt (json) of receipt sent for verification
-        // // int status (0, status code) 0 if valid, status code if error; see https://developer.apple.com/documentation/appstorereceipts/status for status codes
-        //
-        // if (validated == null)
-        // {
-        //     Log.Error(owner: Owner.Nathan, message: "Error validating Apple receipt.", data: $"Receipt: {receipt?.JSON}");
-        //     return Problem(detail: "Error validating Apple receipt.");
-        // }
-        //
-        // if (validated.Status == "failed")
-        // {
-        //     Log.Error(owner: Owner.Nathan, message: "Failed to validate Apple receipt. Order does not exist.", data: $"Receipt: {receipt?.JSON}");
-        //     return Problem(detail: "Failed to validate Apple receipt.");
-        // }
-        // if (validated.Status == "success")
-        // {
-        //     Log.Info(owner: Owner.Nathan, message: "Successful Apple receipt processed.");
-        //     
-        //     if (_appleService.Exists(receipt?.OrderId))
-        //     {
-        //         Log.Error(owner: Owner.Nathan, message: "Apple receipt has already been redeemed.", data: $"Receipt: {receipt?.JSON}");
-        //         return Problem(detail: "Receipt has already been redeemed.");
-        //     }
-        //     
-        //     try
-        //     {
-        //         _appleService.Create(receipt);
-        //         return Ok(receipt?.ResponseObject);
-        //     }
-        //     catch (Exception e)
-        //     {
-        //         Log.Error(owner: Owner.Nathan, message: "Failed to record Apple receipt information.", data: $"{e.Message}. Receipt: {receipt?.JSON}");
-        //         return Problem(detail: "Failed to record Apple receipt information.");
-        //     }
-        // }
+        VerificationResult output = null;
+        output = _appleService.VerifyApple(receipt: receipt);
             
+        // response from apple
+        // string environment (Production, Sandbox)
+        // boolean is-retryable (0, 1) for status codes 21100-21199, 1 means try again, 0 means do not
+        // byte latest_receipt (base64 encoded receipt) only for auto-renewable subscriptions
+        // list latest_receipt_info (purchase transactions) only for auto-renewable subscriptions, does not include finished products
+        // list pending_renewal_info (pending renewal information) only for auto-renewable subscriptions
+        // json receipt (json) of receipt sent for verification
+        // int status (0, status code) 0 if valid, status code if error; see https://developer.apple.com/documentation/appstorereceipts/status for status codes
+        
+        switch (output?.Status)
+        {
+            case null:
+                throw new ReceiptException(receipt, message: "Error validating Apple receipt.");
+            case "failed":
+                throw new ReceiptException(receipt, message: "Failed to validate Apple receipt. Order does not exist.");
+            case "success":
+                Log.Info(owner: Owner.Nathan, message: "Successful Apple receipt processed.");
+
+                if (_appleService.Exists(receipt?.OrderId))
+                    throw new ReceiptException(receipt, "Google receipt has already been redeemed.");
+
+                _appleService.Create(receipt);
+                break;
+        }
+
+        return output;
     }
 
     private VerificationResult ValidateAndroid(Receipt receipt, string signature)

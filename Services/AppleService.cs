@@ -7,107 +7,61 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using RCL.Logging;
+using Rumble.Platform.Common.Exceptions;
+using Rumble.Platform.Common.Extensions;
+using Rumble.Platform.Common.Services;
 using Rumble.Platform.Common.Utilities;
+using Rumble.Platform.ReceiptService.Exceptions;
 using Rumble.Platform.ReceiptService.Models;
 
 namespace Rumble.Platform.ReceiptService.Services;
 
 public class AppleService : VerificationService
 {
+    private readonly ApiService _apiService;
+
+    public AppleService(ApiService apiService) => _apiService = apiService;
     // apple specific looks at receipt
     // receipt is base64 encoded, supposedly fetched from app on device with NSBundle.appStoreReceiptURL
     // requires password
     // requires exclude-old-transactions if auto-renewable subscriptions
     // assuming no subscriptions for now, possible to put in later if needed
-    public async Task<VerificationResult> VerifyApple(Receipt receipt, string signature = null)
+    public VerificationResult VerifyApple(Receipt receipt, string signature = null)
     {
-        VerificationResult verification = null;
-        AppleValidation verified = null;
-        try
-        {
-            verified = await VerifyAppleData(receipt: receipt, env: "prod");
-        }
-        catch (Exception e)
-        {
-            Log.Error(owner: Owner.Nathan, message: e.Message);
-            try
-            {
-                verified = await VerifyAppleData(receipt: receipt, env: "sandbox");
-            }
-            catch (Exception exception)
-            {
-                Log.Error(owner: Owner.Nathan, message: "Failed to validate iTunes receipt against env sandbox.", data: $"{exception.Message}. Receipt: {receipt.JSON}");
-            }
-        }
+        AppleValidation verified = VerifyAppleData(receipt);
 
         if (verified?.Status == 0)
+            throw new ReceiptException(receipt, "Failed to validate iTunes receipt.");
+        
+        return new VerificationResult
         {
-            string receiptKey = $"{PlatformEnvironment.Require(key: "RUMBLE_DEPLOYMENT")}_s_iosReceipt_{receipt.OrderId}";
-            
-            verification = new VerificationResult(
-                status: "success",
-                response: receipt,
-                transactionId: receipt.OrderId,
-                offerId: receipt.ProductId,
-                receiptKey: receiptKey,
-                receiptData: receipt.JSON,
-                timestamp: receipt.PurchaseTime
-            );
-        }
-        else
-        {
-            verification = new VerificationResult(
-                status: "failed",
-                response: receipt,
-                transactionId: receipt.OrderId,
-                offerId: receipt.ProductId,
-                receiptKey: null,
-                receiptData: receipt.JSON,
-                timestamp: receipt.PurchaseTime
-            );
-            Log.Error(owner: Owner.Nathan, message: "Failure to validate iTunes receipt.", data: $"Receipt: {receipt.JSON}");
-        }
-        return verification;
+            Status = "success",
+            Response = receipt,
+            TransactionId = receipt.OrderId,
+            ReceiptKey = $"{PlatformEnvironment.Deployment}_s_iosReceipt_{receipt.OrderId}",
+            ReceiptData = receipt.JSON,
+            Timestamp = receipt.PurchaseTime
+        };
     }
 
-    public async Task<AppleValidation> VerifyAppleData(Receipt receipt, string env) // apple takes stringified version of receipt, includes receipt-data, password
+    public AppleValidation VerifyAppleData(Receipt receipt) // apple takes stringified version of receipt, includes receipt-data, password
     {
-        AppleValidation response = null;
-        string reqUri = env == "prod"
-            ? PlatformEnvironment.Require(key: "iosVerifyReceiptUrl")
-            : PlatformEnvironment.Require(key: "iosVerifyReceiptSandbox");
-
-        byte[] receiptData = Encoding.UTF8.GetBytes(receipt.JSON);
-        string password = PlatformEnvironment.Require(key: "sharedSecret");
-
-        Dictionary<string, object> reqObj = new Dictionary<string, object>
-        {
-            {"receipt-data", receiptData},
-            {"password", password}
-        };
-
-        string reqJson = JsonConvert.SerializeObject(reqObj);
-
-        JsonContent reqData = JsonContent.Create(reqJson);
+        AppleValidation output = null;
         
-        HttpResponseMessage httpResponse = await client.PostAsync(requestUri: reqUri, content: reqData);
-        // TODO
-        // will require a valid apple receipt to test
-        if (httpResponse.StatusCode == HttpStatusCode.OK)
-        {
-            string responseBody = await httpResponse.Content.ReadAsStringAsync();
-            response = JsonConvert.DeserializeObject<AppleValidation>(responseBody);
-        }
-        else
-        {
-            throw new Exception(message: $"Failed to verify iTunes receipt. HTTP {httpResponse.StatusCode} with reason {httpResponse.ReasonPhrase}.");
-        }
-        if (response?.Status == 21007) // fallback to sandbox
-        {
-            throw new Exception(message: $"Failed to verify iTunes receipt with environment {env}. Status code 21007 (sandbox).");
-        }
+        _apiService
+            .Request(PlatformEnvironment.Require<string>("iosVerifyReceiptUrl"))
+            .SetPayload(new GenericData
+            {
+                { "receipt-data", receipt.JSON }, // does this need Encoding.UTF8.GetBytes()?
+                { "password", PlatformEnvironment.Require<string>(key: "sharedSecret") }
+            })
+            .Post(out GenericData response, out int code);
 
-        return response;
+        if (!code.Between(200, 299))
+            throw new PlatformException("Failed to verify iTunes receipt.");
+
+        // TODO: convert response to output
+        return output;
     }
 }
 
