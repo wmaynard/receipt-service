@@ -16,32 +16,15 @@ using Rumble.Platform.ReceiptService.Services;
 
 namespace Rumble.Platform.ReceiptService.Controllers;
 
-[ApiController, Route(template: "commerce/receipt"), UseMongoTransaction]
+[ApiController, Route(template: "commerce"), UseMongoTransaction]
 public class TopController : PlatformController
 {
 #pragma warning disable
     private readonly AppleService _appleService;
     private readonly GoogleService _googleService;
-    private readonly RedisService _redisService; // to be removed when no longer needed
 #pragma warning restore
 
-    [HttpGet, Route(template: "redis"), RequireAuth(AuthType.ADMIN_TOKEN)] // to be removed when no longer needed
-    public ActionResult UpdateFromRedis()
-    {
-        int counter;
-        try
-        {
-            counter = _redisService.UpdateDatabase();
-        }
-        catch (Exception e)
-        {
-            Log.Error(owner: Owner.Nathan, message: "Error occurred while attempting to update from Redis.", data: $"{e.Message}.");
-            return Problem(detail: "Error occurred while attempting to update from Redis.");
-        }
-        return Ok(message: $"Data successfully fetched from Redis; {counter} new entries entered into Mongo.");
-    }
-
-    [HttpPost, Route(template: "")]
+    [HttpPost, Route(template: "receipt")]
     public ObjectResult ReceiptVerify()
     {
         string accountId = Require<string>(key: "account");
