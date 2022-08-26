@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using RCL.Logging;
 using Rumble.Platform.Common.Utilities;
+using Rumble.Platform.ReceiptService.Exceptions;
 using Rumble.Platform.ReceiptService.Models;
 
 namespace Rumble.Platform.ReceiptService.Services;
@@ -13,26 +14,9 @@ public class GoogleService : VerificationService
     public VerificationResult VerifyGoogle(Receipt receipt, string signature = null)
     {
         VerificationResult verification = null;
-        string transactionId = receipt.OrderId;
-        string offerId = receipt.ProductId;
-
-        if (transactionId == null)
-        {
-            Log.Error(owner: Owner.Nathan, message: "Failed to verify Google receipt. No orderId.", data: $"Receipt: {receipt.JSON}");
-            return null;
-        }
-
-        if (offerId == null)
-        {
-            Log.Error(owner: Owner.Nathan, message: "Failed to verify Google receipt. No product ID.", data: $"Receipt: {receipt.JSON}");
-            return null;
-        }
-
+        
         if (signature == null)
-        {
-            Log.Error(owner: Owner.Nathan, message: "Failed to verify Google receipt. No signature.", data: $"Receipt: {receipt.JSON}");
-            return null;
-        }
+            throw new ReceiptException(receipt, "Failed to verify Google receipt. No signature.");
         
         // TODO
         // need a valid receipt to test, not sure if the one on documentation is outdated
@@ -41,7 +25,18 @@ public class GoogleService : VerificationService
         
         // need to match exactly for verification, use googlevalidation for this purpose
 
-        GoogleValidation purchaseInfo = new GoogleValidation(orderId: receipt.OrderId, packageName: receipt.PackageName, productId: receipt.ProductId, purchaseTime: receipt.PurchaseTime, purchaseState: receipt.PurchaseState, purchaseToken: receipt.PurchaseToken, acknowledged: receipt.Acknowledged);
+        // TODO: Is this model even needed?
+        // This is the only place that it seems to appear, and all of the values are identical.
+        GoogleValidation purchaseInfo = new GoogleValidation
+        {
+            OrderId = receipt.OrderId,
+            PackageName = receipt.PackageName,
+            ProductId = receipt.ProductId,
+            PurchaseTime = receipt.PurchaseTime,
+            PurchaseState = receipt.PurchaseState,
+            PurchaseToken = receipt.PurchaseToken,
+            Acknowledged = receipt.Acknowledged
+        };
         
         byte[] purchaseInfoBytes = Encoding.UTF8.GetBytes(purchaseInfo.JSON);
         // byte[] purchaseInfoBytes = Convert.FromBase64String(Convert.ToBase64String(Encoding.UTF8.GetBytes(purchaseInfo.JSON)));
@@ -99,12 +94,12 @@ public class GoogleService : VerificationService
         // if (true) // testing only, remove when rsa fixed
         if (verified)
         {
-            string receiptKey = $"{PlatformEnvironment.Require(key: "RUMBLE_DEPLOYMENT")}_s_aosReceipt_{transactionId}";
+            string receiptKey = $"{PlatformEnvironment.Deployment}_s_aosReceipt_{receipt.OrderId}";
             
             verification = new VerificationResult(
                 status: "success",
                 response: receipt,
-                transactionId: transactionId,
+                transactionId: receipt.OrderId,
                 offerId: receipt.ProductId,
                 receiptKey: receiptKey,
                 receiptData: receipt.JSON,

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Security.Cryptography.Xml;
 using System.Text.Json.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
 using Rumble.Platform.Common.Models;
@@ -24,42 +26,44 @@ public class Receipt : PlatformCollectionDocument
     
     [BsonElement(DB_KEY_ORDER_ID)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_ORDER_ID)]
-    public string OrderId { get; private set; }
+    public string OrderId { get; set; }
     
     [BsonElement(DB_KEY_PACKAGE_NAME)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_PACKAGE_NAME)]
-    public string PackageName { get; private set; }
+    public string PackageName { get; set; }
     
     [BsonElement(DB_KEY_PRODUCT_ID)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_PRODUCT_ID)]
-    public string ProductId { get; private set; }
+    public string ProductId { get; set; }
     
     [BsonElement(DB_KEY_PURCHASE_TIME)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_PURCHASE_TIME)]
-    public long PurchaseTime { get; private set; }
+    public long PurchaseTime { get; set; }
     
     [BsonElement(DB_KEY_PURCHASE_STATE)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_PURCHASE_STATE)]
-    public int PurchaseState { get; private set; }
+    public int PurchaseState { get; set; }
     
     [BsonElement(DB_KEY_PURCHASE_TOKEN)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_PURCHASE_TOKEN)]
-    public string PurchaseToken { get; private set; }
+    public string PurchaseToken { get; set; }
     
     [BsonElement(DB_KEY_ACKNOWLEDGED)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_ACKNOWLEDGED)]
-    public bool Acknowledged { get; private set; }
+    public bool Acknowledged { get; set; }
 
-    public Receipt(string orderId, string packageName, string productId, long purchaseTime, int purchaseState,
-        string purchaseToken, bool acknowledged)
+    protected override void Validate(out List<string> errors)
     {
-        OrderId = orderId;
-        PackageName = packageName;
-        ProductId = productId;
-        PurchaseTime = purchaseTime;
-        PurchaseState = purchaseState;
-        PurchaseToken = purchaseToken;
-        Acknowledged = acknowledged;
+        errors = new List<string>();
+        
+        if (OrderId == null)
+            errors.Add("OrderId cannot be null.");
+        if (ProductId == null)
+            errors.Add("ProductId cannot be null.");
+        // if (Signature == null)
+        //     errors.Add("Signature cannot be null.");
+        
+        
     }
 }
 // Receipt

@@ -33,42 +33,31 @@ public class AppleValidation : Validation
     
     [BsonElement(DB_KEY_ENVIRONMENT)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_ENVIRONMENT)]
-    public string Environment { get; private set; }
+    public string Environment { get; set; }
     
     [BsonElement(DB_KEY_IS_RETRYABLE)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_IS_RETRYABLE)]
-    public int IsRetryable { get; private set; } // 0 (no) or 1 (yes) boolean
+    public int IsRetryable { get; set; } // 0 (no) or 1 (yes) boolean
     
     [BsonElement(DB_KEY_LATEST_RECEIPT), BsonIgnoreIfNull]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_LATEST_RECEIPT)]
-    public byte? LatestReceipt { get; private set; } // base64 encoded, only for auto-renewable
+    public byte? LatestReceipt { get; set; } // base64 encoded, only for auto-renewable
     
     [BsonElement(DB_KEY_LATEST_RECEIPT_INFO), BsonIgnoreIfNull]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_LATEST_RECEIPT_INFO)]
-    public List<string> LatestReceiptInfo { get; private set; } // assuming strings for now, only for auto-renewable
+    public List<string> LatestReceiptInfo { get; set; } // assuming strings for now, only for auto-renewable
     
     [BsonElement(DB_KEY_PENDING_RENEWAL_INFO), BsonIgnoreIfNull]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_PENDING_RENEWAL_INFO)]
-    public List<string> PendingRenewalInfo { get; private set; } // assuming strings for now, only for auto-renewable
+    public List<string> PendingRenewalInfo { get; set; } // assuming strings for now, only for auto-renewable
     
     [BsonElement(DB_KEY_RECEIPT)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_RECEIPT)]
-    public Receipt Receipt { get; private set; } // may have to make sure the format works for apple
+    public Receipt Receipt { get; set; } // may have to make sure the format works for apple
     
     [BsonElement(DB_KEY_STATUS)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_STATUS)]
-    public int Status { get; private set; } // 0 if valid, status code otherwise
-
-    public AppleValidation(string environment, int isRetryable, byte? latestReceipt, List<string> latestReceiptInfo, List<string> pendingRenewalInfo, Receipt receipt, int status)
-    {
-        Environment = environment;
-        IsRetryable = isRetryable;
-        LatestReceipt = latestReceipt;
-        LatestReceiptInfo = latestReceiptInfo;
-        PendingRenewalInfo = pendingRenewalInfo;
-        Receipt = receipt;
-        Status = status;
-    }
+    public int Status { get; set; } // 0 if valid, status code otherwise
 }
 
 /*
