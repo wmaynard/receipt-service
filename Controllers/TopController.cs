@@ -18,7 +18,6 @@ public class TopController : PlatformController
 #pragma warning disable
     private readonly AppleService _appleService;
     private readonly GoogleService _googleService;
-    private readonly SamsungService _samsungService;
     private readonly RedisService _redisService; // to be removed when no longer needed
 #pragma warning restore
 
@@ -152,44 +151,6 @@ public class TopController : PlatformController
                 {
                     Log.Error(owner: Owner.Nathan, message: "Failed to record Google receipt information.", data: $"{e.Message}. Receipt: {receipt?.JSON}");
                     return Problem(detail: "Failed to record Google receipt information.");
-                }
-            }
-        }
-        
-        if (channel == "samsung") // old version additionally looks at playergukey(accountid?) for iosTestGroup_NoSaleOverride(?_
-        {
-            validated = await _samsungService.VerifySamsung(receipt: receipt);
-            
-            if (validated == null)
-            {
-                Log.Error(owner: Owner.Nathan, message: "Error validating Samsung receipt.", data: $"Receipt: {receipt?.JSON}");
-                return Problem(detail: "Error validating Samsung receipt.");
-            }
-
-            if (validated.Status == "failed")
-            {
-                Log.Error(owner: Owner.Nathan, message: "Failed to validate Samsung receipt. Order does not exist.", data: $"Receipt: {receipt?.JSON}");
-                return Problem(detail: "Failed to validate Samsung receipt.");
-            }
-            if (validated.Status == "success")
-            {
-                Log.Info(owner: Owner.Nathan, message: "Successful Samsung receipt processed.");
-                
-                if (_samsungService.Exists(receipt?.OrderId))
-                {
-                    Log.Error(owner: Owner.Nathan, message: "Samsung receipt has already been redeemed.", data: $"Receipt: {receipt?.JSON}");
-                    return Problem(detail: "Receipt has already been redeemed.");
-                }
-                
-                try
-                {
-                    _samsungService.Create(receipt);
-                    return Ok(receipt.ResponseObject);
-                }
-                catch (Exception e)
-                {
-                    Log.Error(owner: Owner.Nathan, message: "Failed to record Samsung receipt information.", data: $"{e.Message}. Receipt: {receipt?.JSON}");
-                    return Problem(detail: "Failed to record Samsung receipt information.");
                 }
             }
         }
