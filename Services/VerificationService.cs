@@ -13,12 +13,5 @@ public abstract class VerificationService : PlatformMongoService<Receipt>
 
     protected VerificationService() : base(collection: "receipts") { }
 
-    public bool Exists(string orderId)
-    {
-        if (_collection.Find(filter: receipt => receipt.OrderId == orderId) == null)
-        {
-            return false;
-        }
-        return true;
-    }
+    public bool Exists(string orderId) => _collection.CountDocuments(filter: receipt => receipt.OrderId == orderId) > 0;
 }
