@@ -92,6 +92,7 @@ public class TopController : PlatformController
 
     private VerificationResult ValidateAndroid(Receipt receipt, string signature)
     {
+        receipt.Validate();
         VerificationResult output = _googleService.VerifyGoogle(receipt: receipt, signature: signature);
 
         switch (output?.Status)

@@ -16,7 +16,7 @@
       <PackageReference Include="MongoDB.Driver" Version="2.13.2" />
       <PackageReference Include="MongoDB.Driver.Core" Version="2.13.2" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-      <PackageReference Include="platform-csharp-common" Version="1.1.57" />
+      <PackageReference Include="platform-csharp-common" Version="1.1.60" />
       <PackageReference Include="StackExchange.Redis" Version="2.2.88" />
     </ItemGroup>
 
