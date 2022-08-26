@@ -1,26 +1,25 @@
 using System.Text.Json.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace Rumble.Platform.ReceiptService.Models
+namespace Rumble.Platform.ReceiptService.Models;
+
+public class SamsungValidation : Validation
 {
-    public class SamsungValidation : Validation
+    // TODO
+    // flush out with correct response
+    // appears to have a paymentId(transactionid), itemId(offerid) based on old version
+    
+    internal const string DB_KEY_STATUS = "status";
+
+    public const string FRIENDLY_KEY_STATUS = "status";
+    
+    [BsonElement(DB_KEY_STATUS)]
+    [JsonInclude, JsonPropertyName(FRIENDLY_KEY_STATUS)]
+    public string Status { get; private set; }
+
+    public SamsungValidation(string status)
     {
-        // TODO
-        // flush out with correct response
-        // appears to have a paymentId(transactionid), itemId(offerid) based on old version
-        
-        internal const string DB_KEY_STATUS = "status";
-
-        public const string FRIENDLY_KEY_STATUS = "status";
-        
-        [BsonElement(DB_KEY_STATUS)]
-        [JsonInclude, JsonPropertyName(FRIENDLY_KEY_STATUS)]
-        public string Status { get; private set; }
-
-        public SamsungValidation(string status)
-        {
-            Status = status;
-        }
+        Status = status;
     }
 }
 
