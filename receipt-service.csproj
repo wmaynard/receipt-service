@@ -16,8 +16,17 @@
       <PackageReference Include="MongoDB.Driver" Version="2.13.2" />
       <PackageReference Include="MongoDB.Driver.Core" Version="2.13.2" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-      <PackageReference Include="platform-csharp-common" Version="1.1.60" />
+      <PackageReference Include="platform-csharp-common" Version="1.1.61" />
       <PackageReference Include="StackExchange.Redis" Version="2.2.88" />
+    </ItemGroup>
+
+
+    <ItemGroup>
+      <Content Include=".gitlab\deploy-eb.yaml" />
+      <Content Include=".gitlab\deploy-k8s.yaml" />
+      <Content Include=".gitlab\dev.values.yaml" />
+      <Content Include=".gitlab\stage-a.values.yaml" />
+      <Content Include=".gitlab\stage-b.values.yaml" />
     </ItemGroup>
 
 </Project>
