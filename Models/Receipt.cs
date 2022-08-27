@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Security.Cryptography.Xml;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Localization;
 using MongoDB.Bson.Serialization.Attributes;
 using Rumble.Platform.Common.Models;
 
@@ -56,10 +57,10 @@ public class Receipt : PlatformCollectionDocument
     {
         errors = new List<string>();
         
-        if (OrderId == null)
-            errors.Add("OrderId cannot be null.");
-        if (ProductId == null)
-            errors.Add("ProductId cannot be null.");
+        if (string.IsNullOrWhiteSpace(OrderId))
+            errors.Add("OrderId cannot be empty.");
+        if (string.IsNullOrWhiteSpace(ProductId))
+            errors.Add("ProductId cannot be empty.");
         // if (Signature == null)
         //     errors.Add("Signature cannot be null.");
         
