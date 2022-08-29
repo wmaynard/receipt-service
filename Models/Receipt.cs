@@ -1,29 +1,30 @@
 using System.Collections.Generic;
-using System.Security.Cryptography.Xml;
 using System.Text.Json.Serialization;
-using Microsoft.Extensions.Localization;
 using MongoDB.Bson.Serialization.Attributes;
 using Rumble.Platform.Common.Models;
 
 namespace Rumble.Platform.ReceiptService.Models;
 
+[BsonIgnoreExtraElements]
 public class Receipt : PlatformCollectionDocument
 {
-    internal const string DB_KEY_ORDER_ID = "orderId";
-    internal const string DB_KEY_PACKAGE_NAME = "pkgName";
-    internal const string DB_KEY_PRODUCT_ID = "prodId";
-    internal const string DB_KEY_PURCHASE_TIME = "purchTme";
+    internal const string DB_KEY_ORDER_ID       = "orderId";
+    internal const string DB_KEY_PACKAGE_NAME   = "pkgName";
+    internal const string DB_KEY_PRODUCT_ID     = "prodId";
+    internal const string DB_KEY_PURCHASE_TIME  = "purchTme";
     internal const string DB_KEY_PURCHASE_STATE = "purchState";
     internal const string DB_KEY_PURCHASE_TOKEN = "purchTkn";
-    internal const string DB_KEY_ACKNOWLEDGED = "acknlged";
+    internal const string DB_KEY_ACKNOWLEDGED   = "acknlged";
+    internal const string DB_KEY_ACCOUNT_ID     = "accId";
 
-    public const string FRIENDLY_KEY_ORDER_ID = "orderId";
-    public const string FRIENDLY_KEY_PACKAGE_NAME = "packageName";
-    public const string FRIENDLY_KEY_PRODUCT_ID = "productId";
-    public const string FRIENDLY_KEY_PURCHASE_TIME = "purchaseTime";
+    public const string FRIENDLY_KEY_ORDER_ID       = "orderId";
+    public const string FRIENDLY_KEY_PACKAGE_NAME   = "packageName";
+    public const string FRIENDLY_KEY_PRODUCT_ID     = "productId";
+    public const string FRIENDLY_KEY_PURCHASE_TIME  = "purchaseTime";
     public const string FRIENDLY_KEY_PURCHASE_STATE = "purchaseState";
     public const string FRIENDLY_KEY_PURCHASE_TOKEN = "purchaseToken";
-    public const string FRIENDLY_KEY_ACKNOWLEDGED = "acknowledged";
+    public const string FRIENDLY_KEY_ACKNOWLEDGED   = "acknowledged";
+    public const string FRIENDLY_KEY_ACCOUNT_ID     = "accountId";
     
     [BsonElement(DB_KEY_ORDER_ID)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_ORDER_ID)]
@@ -52,6 +53,10 @@ public class Receipt : PlatformCollectionDocument
     [BsonElement(DB_KEY_ACKNOWLEDGED)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_ACKNOWLEDGED)]
     public bool Acknowledged { get; set; }
+    
+    [BsonElement(DB_KEY_ACCOUNT_ID)]
+    [JsonInclude, JsonPropertyName(FRIENDLY_KEY_ACCOUNT_ID)]
+    public string AccountId { get; set; }
 
     protected override void Validate(out List<string> errors)
     {
