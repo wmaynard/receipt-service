@@ -94,7 +94,7 @@ public class GoogleService : VerificationService
             
             GoogleSignatureVerify signatureVerify =
                 new GoogleSignatureVerify(PlatformEnvironment.Require(key: "androidStoreKey"));
-            verified = signatureVerify.Verify(receipt.JSON, signature);
+            verified = signatureVerify.Verify(receipt.JSON.Replace(",\"accountId\":null,\"id\":null", ""), signature);
         }
         catch (Exception e)
         {
