@@ -1,10 +1,13 @@
 using System;
 using System.Security.Cryptography;
 using System.Text;
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Security;
 using RCL.Logging;
 using Rumble.Platform.Common.Utilities;
 using Rumble.Platform.ReceiptService.Exceptions;
 using Rumble.Platform.ReceiptService.Models;
+using Rumble.Platform.ReceiptService.Utilities;
 
 namespace Rumble.Platform.ReceiptService.Services;
     
@@ -38,14 +41,15 @@ public class GoogleService : VerificationService
             Acknowledged = receipt.Acknowledged
         };
         
+        /*
         byte[] purchaseInfoBytes = Encoding.UTF8.GetBytes(purchaseInfo.JSON);
         // byte[] purchaseInfoBytes = Convert.FromBase64String(Convert.ToBase64String(Encoding.UTF8.GetBytes(purchaseInfo.JSON)));
         
-        // byte[] sigBytes = Encoding.UTF8.GetBytes(signature);
-        byte[] sigBytes = Convert.FromBase64String(signature);
+        byte[] sigBytes = Encoding.UTF8.GetBytes(signature);
+        // byte[] sigBytes = Convert.FromBase64String(signature);
         
-        // byte[] keyBytes = Encoding.UTF8.GetBytes(PlatformEnvironment.Require(key: "androidStoreKey"));
-        byte[] keyBytes = Convert.FromBase64String(PlatformEnvironment.Require(key: "androidStoreKey"));
+        byte[] keyBytes = Encoding.UTF8.GetBytes(PlatformEnvironment.Require(key: "androidStoreKey"));
+        // byte[] keyBytes = Convert.FromBase64String(PlatformEnvironment.Require(key: "androidStoreKey"));
         
         // AsymmetricKeyParameter asymmetricKeyParameter = PublicKeyFactory.CreateKey(keyBytes);
         // RsaKeyParameters rsaKeyParameters = (RsaKeyParameters) asymmetricKeyParameter;
@@ -78,12 +82,19 @@ public class GoogleService : VerificationService
         
         RSAPKCS1SignatureDeformatter rsaDeformatter = new RSAPKCS1SignatureDeformatter(rsa);
         rsaDeformatter.SetHashAlgorithm(strName: "SHA1");
+        */
+        
         bool verified;
+
         try
         {
             // TODO try another receipt with a tested valid signature
             // the following appears to return false for the provided sample data sent
-            verified = rsaDeformatter.VerifySignature(rgbHash: hash, rgbSignature: sigBytes);
+            // verified = rsaDeformatter.VerifySignature(rgbHash: hash, rgbSignature: sigBytes);
+            
+            GoogleSignatureVerify signatureVerify =
+                new GoogleSignatureVerify(PlatformEnvironment.Require(key: "androidStoreKey"));
+            verified = signatureVerify.Verify(receipt.JSON, signature);
         }
         catch (Exception e)
         {
