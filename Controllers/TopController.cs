@@ -48,19 +48,19 @@ public class TopController : PlatformController
 
         VerificationResult validated = channel switch
         {
-            "aos" => ValidateAndroid(receipt, signature),
-            "ios" => ValidateApple(receipt, signature),
+            "aos" => ValidateAndroid(receipt, accountId, signature),
+            "ios" => ValidateApple(receipt, accountId, signature),
             _ => throw new ReceiptException(receipt, "Receipt called with invalid channel.  Please use 'ios' or 'aos'.")
         };
 
         return Ok(receipt.ResponseObject);
     }
 
-    private VerificationResult ValidateApple(Receipt receipt, string signature)
+    private VerificationResult ValidateApple(Receipt receipt, string accountId, string signature)
     {
+        receipt.Validate();
         
-        VerificationResult output = null;
-        output = _appleService.VerifyApple(receipt: receipt);
+        VerificationResult output = _appleService.VerifyApple(receipt: receipt);
             
         // response from apple
         // string environment (Production, Sandbox)
@@ -81,7 +81,11 @@ public class TopController : PlatformController
                 Log.Info(owner: Owner.Nathan, message: "Successful Apple receipt processed.");
 
                 if (_appleService.Exists(receipt?.OrderId))
+                {
                     throw new ReceiptException(receipt, "Google receipt has already been redeemed.");
+                }
+
+                receipt.AccountId = accountId;
 
                 _appleService.Create(receipt);
                 break;
@@ -90,7 +94,7 @@ public class TopController : PlatformController
         return output;
     }
 
-    private VerificationResult ValidateAndroid(Receipt receipt, string signature)
+    private VerificationResult ValidateAndroid(Receipt receipt, string accountId, string signature)
     {
         receipt.Validate();
         VerificationResult output = _googleService.VerifyGoogle(receipt: receipt, signature: signature);
@@ -105,7 +109,11 @@ public class TopController : PlatformController
                 Log.Info(owner: Owner.Nathan, message: "Successful Google receipt processed.");
 
                 if (_googleService.Find(filter: receipt => receipt.OrderId == output.TransactionId).FirstOrDefault() != null)
+                {
                     throw new ReceiptException(receipt, "Google receipt has already been redeemed.");
+                }
+
+                receipt.AccountId = accountId;
 
                 _googleService.Create(receipt);
                 break;

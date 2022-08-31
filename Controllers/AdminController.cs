@@ -40,14 +40,16 @@ public class AdminController : PlatformController
     {
         List<Receipt> receipts = _receiptService.GetAll();
         
-        return Ok(receipts);
+        return Ok(new { Receipts = receipts });
     }
 
     [HttpGet, Route(template: "player")]
-    public ActionResult Player(string accountId)
+    public ActionResult Player()
     {
+        string accountId = Require<string>(key: "accountId");
+        
         List<Receipt> receipts = _receiptService.GetByAccount(accountId);
 
-        return Ok(receipts);
+        return Ok(new { Receipts = receipts});
     }
 }
