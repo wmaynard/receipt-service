@@ -1,9 +1,5 @@
-using System;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using RCL.Logging;
 using Rumble.Platform.Common.Attributes;
 using Rumble.Platform.Common.Enums;
@@ -30,7 +26,7 @@ public class TopController : PlatformController
         string accountId = Require<string>(key: "account");
         string channel = Require<string>(key: "channel");
         string game = Require<string>(key: "game");
-        string signature = Optional<string>(key: "signature");
+        string signature = Optional<string>(key: "signature"); // for android
         Receipt receipt = Require<Receipt>(key: "receipt");
 
         if (channel == "aos" && signature == null)
@@ -45,13 +41,6 @@ public class TopController : PlatformController
             throw new PlatformException(message: "IOS IAPs shouldn't exist yet...?");
         }
 
-        // the following are the current payload keys
-        // if we need receipt to contain everything, perhaps key:receipt is not a receipt yet, but create receipt using these
-        // also optional string signature for android
-
-        // string receiptData = Require<string>(key: "receipt"); // is stringified in the request
-        // Receipt receipt = JsonConvert.DeserializeObject<Receipt>(receiptData);
-        
         // Log.Info(owner: Owner.Nathan, message: $"Receipt validation request", data: $"game: {game}, accountId: {accountId}, channel: {channel}, receiptData: {receiptData}");
         Log.Info(owner: Owner.Nathan, message: $"Receipt parsed from receipt data", data: $"Receipt: {receipt.JSON}");
 
