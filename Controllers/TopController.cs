@@ -30,8 +30,20 @@ public class TopController : PlatformController
         string accountId = Require<string>(key: "account");
         string channel = Require<string>(key: "channel");
         string game = Require<string>(key: "game");
-        string signature = Require<string>(key: "signature");
+        string signature = Optional<string>(key: "signature");
         Receipt receipt = Require<Receipt>(key: "receipt");
+
+        if (channel == "aos" && signature == null)
+        {
+            throw new ReceiptException(receipt,
+                                       "Receipt called with 'aos' as the channel without a signature. 'aos' receipts require a signature");
+        }
+
+        // remove when ios iaps are implemented on client/server
+        if (channel == "ios")
+        {
+            throw new PlatformException(message: "IOS IAPs shouldn't exist yet...?");
+        }
 
         // the following are the current payload keys
         // if we need receipt to contain everything, perhaps key:receipt is not a receipt yet, but create receipt using these
@@ -49,14 +61,14 @@ public class TopController : PlatformController
         VerificationResult validated = channel switch
         {
             "aos" => ValidateAndroid(receipt, accountId, signature),
-            "ios" => ValidateApple(receipt, accountId, signature),
+            "ios" => ValidateApple(receipt, accountId),
             _ => throw new ReceiptException(receipt, "Receipt called with invalid channel.  Please use 'ios' or 'aos'.")
         };
 
         return Ok(receipt.ResponseObject);
     }
 
-    private VerificationResult ValidateApple(Receipt receipt, string accountId, string signature)
+    private VerificationResult ValidateApple(Receipt receipt, string accountId)
     {
         receipt.Validate();
         
@@ -82,7 +94,7 @@ public class TopController : PlatformController
 
                 if (_appleService.Exists(receipt?.OrderId))
                 {
-                    throw new ReceiptException(receipt, "Google receipt has already been redeemed.");
+                    throw new ReceiptException(receipt, "Apple receipt has already been redeemed.");
                 }
 
                 receipt.AccountId = accountId;
