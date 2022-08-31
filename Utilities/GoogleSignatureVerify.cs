@@ -30,7 +30,7 @@ namespace Rumble.Platform.ReceiptService.Utilities
           break;
         }
       }
-      byte[] rsaMod = new byte[modulus.Length-pos];
+      byte[] rsaMod = new byte[modulus.Length - pos];
       Array.Copy(modulus,pos,rsaMod,0,modulus.Length - pos);
 
       // Fill the Microsoft parameters
