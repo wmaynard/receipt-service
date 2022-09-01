@@ -109,6 +109,16 @@ public class TopController : PlatformController
     private VerificationResult ValidateAndroid(Receipt receipt, string accountId, string signature)
     {
         receipt.Validate();
+        
+        // Per https://developers.google.com/android-publisher/api-ref/rest/v3/purchases.products/get:
+        // This API call should be able to check the purchase and consumption status of an inapp item.
+        // This should be the modern way of validating receipts.  Consequently it should be left in as a
+        // comment in case Google ever drops support for our current receipt validation.  However, it should
+        // be noted that this call is missing its auth header; Sean may be needed to get the correct auth token.
+        // _apiService
+        //     .Request($"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{receipt.PackageName}/purchases/products/{receipt.ProductId}/tokens/{receipt.PurchaseToken}")
+        //     .OnFailure(response => Log.Local(Owner.Will, response.AsGenericData.JSON, emphasis: Log.LogType.ERROR))
+        //     .Get(out GenericData json, out int code);
         VerificationResult output = _googleService.VerifyGoogle(receipt: receipt, signature: signature);
 
         switch (output?.Status)
