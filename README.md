@@ -7,46 +7,46 @@ and **Samsung**. **Apple** and **Samsung** `receipts` require an external API to
 verify on a local server. The service also temporarily allows users to fetch `receipt` data from the current _Redis_ database and migrate them over to the _Mongo_ database.
 
 # Required Environment Variables
-| Variable | Description |
-| ---: | :--- |
-| GRAPHITE | Link to hosted _graphite_ for analytics and monitoring. |
-| LOGGLY_URL | Link to _Loggly_ to analyze logs in greater detail. |
-| MONGODB_NAME | The _MongoDB_ name which the service connects to. |
-| MONGODB_URI | The connection string for the environment's _MongoDB_. |
-| RUMBLE_COMPONENT | The name of the service. |
-| RUMBLE_DEPLOYMENT | Signifies the deployment environment. |
-| RUMBLE_KEY | Key to validate for each deployment environment. |
-| RUMBLE_TOKEN_VALIDATION | Link to current validation for player tokens. |
+|                  Variable | Description                                                                            |
+|--------------------------:|:---------------------------------------------------------------------------------------|
+|                  GRAPHITE | Link to hosted _graphite_ for analytics and monitoring.                                |
+|                LOGGLY_URL | Link to _Loggly_ to analyze logs in greater detail.                                    |
+|              MONGODB_NAME | The _MongoDB_ name which the service connects to.                                      |
+|               MONGODB_URI | The connection string for the environment's _MongoDB_.                                 |
+|          RUMBLE_COMPONENT | The name of the service.                                                               |
+|         RUMBLE_DEPLOYMENT | Signifies the deployment environment.                                                  |
+|                RUMBLE_KEY | Key to validate for each deployment environment.                                       |
+|   RUMBLE_TOKEN_VALIDATION | Link to current validation for player tokens.                                          |
 | RUMBLE_TOKEN_VERIFICATION | Link to current validation for admin tokens. Will include player tokens in the future. |
-| VERBOSE_LOGGING | Logs in greater detail. |
+|           VERBOSE_LOGGING | Logs in greater detail.                                                                |
 
 # Temporary Variables
-| Variable | Description |
-| ---: | :--- |
-| iosVerifyReceiptUrl | External API to verify **Apple** `receipts`. |
-| iosVerifyReceiptSandbox | Testing external API to verify **Apple** `receipts`. |
-| sharedSecret | Password for external API to verify **Apple** `receipts`. |
+|                Variable | Description                                                                                       |
+|------------------------:|:--------------------------------------------------------------------------------------------------|
+|     iosVerifyReceiptUrl | External API to verify **Apple** `receipts`.                                                      |
+| iosVerifyReceiptSandbox | Testing external API to verify **Apple** `receipts`.                                              |
+|            sharedSecret | Password for external API to verify **Apple** `receipts`.                                         |
 | samsungVerifyReceiptUrl | Base external API to verify **Samsung** `receipts`. The `orderId` is appended to the end of this. |
-| androidStoreKey | The `RSA public key` provided by **Google** to verify `receipts`. |
-| REDIS_HOST | The `hosted` location of the current _Redis_ database. |
-| REDIS_PASSWORD | The `password` to the current _Redis_ database. |
-| REDIS_PORT | The `port` with which the current _Redis_ database is accessed. |
+|         androidStoreKey | The `RSA public key` provided by **Google** to verify `receipts`.                                 |
+|              REDIS_HOST | The `hosted` location of the current _Redis_ database.                                            |
+|          REDIS_PASSWORD | The `password` to the current _Redis_ database.                                                   |
+|              REDIS_PORT | The `port` with which the current _Redis_ database is accessed.                                   |
 
 # Glossary
-| Term | Description |
-| ---: | :--- |
-| Receipt | Contains the data relevant to the purchase to be verified. |
-| game | Information to determine what `game` the `receipt` is for. For now, only `tower` is accepted. |
-| account | `Account ID` for the account performing the purchase. Not currently in use but required for the future. |
-| channel | Determines which App store to verify with. This can be `ios`, `aos`, or `samsung`. |
-| orderId | Unique identifier for the `receipt`. Used by the services to verify with the appropriate App stores. |
-| packageName | Identifier for the product on the App store. |
-| productId | Identifier for the product or item that was purchased. |
-| purchaseTime | `Unix timestamp` for the purchase time. Old migrated data has this in milliseconds. |
-| purchaseState | 0 or 1 depending on the state of the purchase. |
-| purchaseToken | Token attached to a `receipt` for verification purposes. |
-| acknowledged | Leftover boolean from old version of `receipt-service` that does not appear to have any functionality. |
-| id | _Mongo_ identifier for a receipt. |
+|          Term | Description                                                                                             |
+|--------------:|:--------------------------------------------------------------------------------------------------------|
+|       Receipt | Contains the data relevant to the purchase to be verified.                                              |
+|          game | Information to determine what `game` the `receipt` is for. For now, only `tower` is accepted.           |
+|       account | `Account ID` for the account performing the purchase. Not currently in use but required for the future. |
+|       channel | Determines which App store to verify with. This can be `ios`, `aos`, or `samsung`.                      |
+|       orderId | Unique identifier for the `receipt`. Used by the services to verify with the appropriate App stores.    |
+|   packageName | Identifier for the product on the App store.                                                            |
+|     productId | Identifier for the product or item that was purchased.                                                  |
+|  purchaseTime | `Unix timestamp` for the purchase time. Old migrated data has this in milliseconds.                     |
+| purchaseState | 0 or 1 depending on the state of the purchase.                                                          |
+| purchaseToken | Token attached to a `receipt` for verification purposes.                                                |
+|  acknowledged | Leftover boolean from old version of `receipt-service` that does not appear to have any functionality.  |
+|            id | _Mongo_ identifier for a receipt.                                                                       |
 
 # Using the Service
 All non-health endpoints require a valid admin token from `token-service`.
@@ -55,16 +55,23 @@ Requirements to these endpoints should have an `Authorization` header with a `Be
 All `timestamps` in the service are in the format of a `Unix timestamp`. This is to allow consistency and reduce confusion between time zones.
 
 # Endpoints
-All endpoints are reached with the base route `/commerce/receipt/`. Any following endpoints listed are appended on to the base route.
+All endpoints are reached with the base route `/commerce/`. Any following endpoints listed are appended on to the base route.
 
-**Example**: `GET /commerce/receipt/heatlh`
+**Example**: `GET /commerce/health`
 
 ## Top Level
-| Method | Endpoint | Description | Required Parameters | Google-specific Parameters |
-| ---: | :--- | :--- | :--- | :--- |
-| GET | `/health` | **INTERNAL** Health check on the status of the following services: `AppleService`, `GoogleService`, `SamsungService`, `RedisService` |  |  |
-| POST | `/` | **INTERNAL** Submit a `receipt` with other required information to be verified. | *string*`game`<br />*string*`account`<br />*string*`channel`<br />*Receipt*`receipt` | *string*`signature` |
-| GET | `/redis` | **INTERNAL** Fetch all entries in the current _Redis_ database and migrate them over to _Mongo_ |  |  |
+| Method | Endpoint   | Description                                                                                                                          | Required Parameters                                                                  | Google-specific Parameters |
+|-------:|:-----------|:-------------------------------------------------------------------------------------------------------------------------------------|:-------------------------------------------------------------------------------------|:---------------------------|
+|    GET | `/health`  | **INTERNAL** Health check on the status of the following services: `AppleService`, `GoogleService`, `SamsungService`, `RedisService` |                                                                                      |                            |
+|   POST | `/receipt` | **INTERNAL** Submit a `receipt` with other required information to be verified.                                                      | *string*`game`<br />*string*`account`<br />*string*`channel`<br />*Receipt*`receipt` | *string*`signature`        |
+
+## Admin
+| Method | Endpoint  | Description                                                                                     | Required Parameters |
+|-------:|:----------|:------------------------------------------------------------------------------------------------|:--------------------|
+|    GET | `/all`    | **INTERNAL** Fetch all receipts in the database and sort by transaction timestamp               |                     |
+|    GET | `/player` | **INTERNAL** Fetch all receipts in the database for a player and sort by transaction timestamp  | *string*`accountId` |
+|    GET | `/redis`  | **INTERNAL** Fetch all entries in the current _Redis_ database and migrate them over to _Mongo_ |                     |
+
 
 ### Notes
 A `Receipt` is structured the same way for all three services and are transformed according to what the external APIs require.
@@ -94,7 +101,7 @@ None of the services currently make use of the `account` field, but this is pres
 
 # Future Updates
 - The current temporary environment variables that hold the external API urls, `passwords`, and `RSA public keys` may be changed to use `dynamic config` instead.
-- **Apple** and **Samsung** verifications should require further testing. There are no current **Apple** or **Samsung** purchases to use to test.
+- **Apple** and **Samsung** verifications will require updates. There are no current **Apple** or **Samsung** purchases to use to test.
 - **Google** verification require further testing. The example provided by **v1**'s documentation may be outdated.
 - All code related to `RedisService` and its corresponding endpoint should be removed once this service is fully functional.
 

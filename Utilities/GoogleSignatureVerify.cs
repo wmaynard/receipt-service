@@ -1,9 +1,6 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using Org.BouncyCastle.Security;
-using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Parameters;
 using System.Security.Cryptography;
 
@@ -13,28 +10,28 @@ namespace Rumble.Platform.ReceiptService.Utilities
   {
     RSAParameters _rsaKeyInfo;
 
-    public GoogleSignatureVerify(String GooglePublicKey)
+    public GoogleSignatureVerify(String googlePublicKey)
     {
-      RsaKeyParameters rsaParameters= (RsaKeyParameters) PublicKeyFactory.CreateKey(Convert.FromBase64String(GooglePublicKey)); 
+      RsaKeyParameters rsaParameters= (RsaKeyParameters) PublicKeyFactory.CreateKey(Convert.FromBase64String(googlePublicKey)); 
 
       byte[] rsaExp   = rsaParameters.Exponent.ToByteArray();
-      byte[] Modulus  = rsaParameters.Modulus.ToByteArray();
+      byte[] modulus  = rsaParameters.Modulus.ToByteArray();
 
       // Microsoft RSAParameters modulo wants leading zero's removed so create new array with leading zero's removed
-      int Pos = 0;
-      for (int i=0; i<Modulus.Length; i++)
+      int pos = 0;
+      for (int i = 0; i < modulus.Length; i++)
       {
-        if (Modulus[i] == 0) 
+        if (modulus[i] == 0) 
         {
-          Pos++;
+          pos++;
         }
         else
         {
           break;
         }
       }
-      byte[] rsaMod = new byte[Modulus.Length-Pos];
-      Array.Copy(Modulus,Pos,rsaMod,0,Modulus.Length-Pos);
+      byte[] rsaMod = new byte[modulus.Length - pos];
+      Array.Copy(modulus,pos,rsaMod,0,modulus.Length - pos);
 
       // Fill the Microsoft parameters
       _rsaKeyInfo = new RSAParameters()
@@ -44,13 +41,11 @@ namespace Rumble.Platform.ReceiptService.Utilities
                     };
     }
 
-    public bool Verify(String Message, String Signature)
+    public bool Verify(String message, String signature)
     {
-      using (RSACryptoServiceProvider rsa = new RSACryptoServiceProvider())
-      {      
-        rsa.ImportParameters(_rsaKeyInfo);  
-        return rsa.VerifyData(Encoding.ASCII.GetBytes(Message), "SHA1", Convert.FromBase64String(Signature));  
-      }           
+      using RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
+      rsa.ImportParameters(_rsaKeyInfo);  
+      return rsa.VerifyData(Encoding.ASCII.GetBytes(message), "SHA1", Convert.FromBase64String(signature));
     }
   }
 }
