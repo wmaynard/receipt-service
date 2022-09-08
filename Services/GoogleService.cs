@@ -9,7 +9,7 @@ namespace Rumble.Platform.ReceiptService.Services;
     
 public class GoogleService : VerificationService
 {
-    // google specific looks at receipt, signature
+    // Attempts to verify an aos receipt
     public static VerificationResult VerifyGoogle(Receipt receipt, string signature = null)
     {
         VerificationResult verification = null;
@@ -34,7 +34,6 @@ public class GoogleService : VerificationService
             return null;
         }
 
-        // if (true) // testing only, remove when rsa fixed
         if (verified)
         {
             string receiptKey = $"{PlatformEnvironment.Deployment}_s_aosReceipt_{receipt.OrderId}";

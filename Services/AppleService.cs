@@ -42,6 +42,7 @@ public class AppleService : VerificationService
                };
     }
 
+    // Sends the request to attempt to verify receipt data
     public AppleValidation VerifyAppleData(Receipt receipt) // apple takes stringified version of receipt, includes receipt-data, password
     {
         AppleValidation output = null;

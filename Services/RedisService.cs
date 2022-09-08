@@ -17,11 +17,9 @@ public class RedisService : PlatformMongoService<Receipt>
     // purpose is to pull data from redis and put into mongo
     // to be removed when no longer needed
 
-    public RedisService() : base(collection: "receipts")
-    {
-        
-    }
+    public RedisService() : base(collection: "receipts") {  }
 
+    // Fetches all receipts from existing redis database to transfer to Mongo
     public int UpdateDatabase()
     {
         int counter = 0;
@@ -63,6 +61,7 @@ public class RedisService : PlatformMongoService<Receipt>
         return counter;
     }
 
+    // Checks if entry is a duplicate
     private bool Exists(string fragment)
     {
         return _collection.Find(filter: receipt => receipt.OrderId == fragment).FirstOrDefault() != null;

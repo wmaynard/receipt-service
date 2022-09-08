@@ -14,6 +14,7 @@ public abstract class VerificationService : PlatformMongoService<Receipt>
 
     protected VerificationService() : base(collection: "receipts") { }
 
+    // Checks if the order already exists
     public bool Exists(string orderId)
     {
         return _collection.CountDocuments(filter: receipt => receipt.OrderId == orderId) > 0;
