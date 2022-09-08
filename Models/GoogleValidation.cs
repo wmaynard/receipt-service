@@ -1,5 +1,7 @@
 using System.Text.Json.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
+// ReSharper disable MemberCanBePrivate.Global
+// ReSharper disable ArrangeAttributes
 
 namespace Rumble.Platform.ReceiptService.Models;
 

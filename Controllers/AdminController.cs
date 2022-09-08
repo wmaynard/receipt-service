@@ -7,6 +7,7 @@ using Rumble.Platform.Common.Utilities;
 using Rumble.Platform.Common.Web;
 using Rumble.Platform.ReceiptService.Models;
 using Rumble.Platform.ReceiptService.Services;
+// ReSharper disable ArrangeAttributes
 
 namespace Rumble.Platform.ReceiptService.Controllers;
 

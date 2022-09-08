@@ -4,6 +4,7 @@ using Rumble.Platform.Common.Services;
 using Rumble.Platform.Common.Utilities;
 using Rumble.Platform.ReceiptService.Models;
 using StackExchange.Redis;
+// ReSharper disable InconsistentNaming
 
 namespace Rumble.Platform.ReceiptService.Services;
 
@@ -47,8 +48,10 @@ public class RedisService : PlatformMongoService<Receipt>
         foreach (string key in server.Keys(pattern: "*")) // optimize? it takes very long but it is likely because of the redis db, have to iterate through all no matter what
         {
             if (Exists(fragment: key[17..])) // currently assumes only aos receipts, can parse if needed for other types
+            {
                 continue;
-            
+            }
+
             string value = db.StringGet(key);
             Receipt newReceipt = JsonConvert.DeserializeObject<Receipt>(value); // TODO: Avoid JsonConvert
             
@@ -60,5 +63,8 @@ public class RedisService : PlatformMongoService<Receipt>
         return counter;
     }
 
-    private bool Exists(string fragment) => _collection.Find(filter: receipt => receipt.OrderId == fragment).FirstOrDefault() != null;
+    private bool Exists(string fragment)
+    {
+        return _collection.Find(filter: receipt => receipt.OrderId == fragment).FirstOrDefault() != null;
+    }
 }

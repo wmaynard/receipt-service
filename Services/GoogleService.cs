@@ -10,12 +10,14 @@ namespace Rumble.Platform.ReceiptService.Services;
 public class GoogleService : VerificationService
 {
     // google specific looks at receipt, signature
-    public VerificationResult VerifyGoogle(Receipt receipt, string signature = null)
+    public static VerificationResult VerifyGoogle(Receipt receipt, string signature = null)
     {
         VerificationResult verification = null;
         
         if (signature == null)
+        {
             throw new ReceiptException(receipt, "Failed to verify Google receipt. No signature provided.");
+        }
 
         bool verified;
 
