@@ -20,6 +20,7 @@ public class TopController : PlatformController
     private readonly GoogleService _googleService;
 #pragma warning restore
 
+    // Attempts to verify a provided receipt
     [HttpPost, Route(template: "receipt")]
     public ObjectResult ReceiptVerify()
     {
@@ -56,6 +57,7 @@ public class TopController : PlatformController
         return Ok(receipt.ResponseObject);
     }
 
+    // Validation process for an ios receipt
     private VerificationResult ValidateApple(Receipt receipt, string accountId)
     {
         receipt.Validate();
@@ -94,6 +96,7 @@ public class TopController : PlatformController
         return output;
     }
 
+    // Validation process for an aos receipt
     private VerificationResult ValidateAndroid(Receipt receipt, string accountId, string signature)
     {
         receipt.Validate();

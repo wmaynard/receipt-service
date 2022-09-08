@@ -19,6 +19,7 @@ public class AdminController : PlatformController
     private readonly RedisService            _redisService; // to be removed when no longer needed
 #pragma warning restore
     
+    // Retrieves all entries in redis and moves them over to Mongo
     [HttpGet, Route(template: "redis"), IgnorePerformance] // to be removed when no longer needed
     public ActionResult UpdateFromRedis()
     {
@@ -34,6 +35,7 @@ public class AdminController : PlatformController
         return Ok(message: $"Data successfully fetched from Redis; {counter} new entries entered into Mongo.");
     }
 
+    // Fetches all receipts in Mongo
     [HttpGet, Route(template: "all")]
     public ActionResult All()
     {
@@ -42,6 +44,7 @@ public class AdminController : PlatformController
         return Ok(new { Receipts = receipts });
     }
 
+    // Fetches all receipts in Mongo matching provided accountId
     [HttpGet, Route(template: "player")]
     public ActionResult Player()
     {
