@@ -4,6 +4,7 @@ using Rumble.Platform.Common.Services;
 using Rumble.Platform.Common.Utilities;
 using Rumble.Platform.ReceiptService.Exceptions;
 using Rumble.Platform.ReceiptService.Models;
+// ReSharper disable MemberCanBePrivate.Global
 
 namespace Rumble.Platform.ReceiptService.Services;
 
@@ -11,7 +12,11 @@ public class AppleService : VerificationService
 {
     private readonly ApiService _apiService;
 
-    public AppleService(ApiService apiService) => _apiService = apiService;
+    public AppleService(ApiService apiService)
+    {
+        _apiService = apiService;
+    }
+
     // apple specific looks at receipt
     // receipt is base64 encoded, supposedly fetched from app on device with NSBundle.appStoreReceiptURL
     // requires password
@@ -22,19 +27,22 @@ public class AppleService : VerificationService
         AppleValidation verified = VerifyAppleData(receipt);
 
         if (verified?.Status == 0)
-            throw new ReceiptException(receipt, "Failed to validate iTunes receipt.");
-        
-        return new VerificationResult
         {
-            Status = "success",
-            Response = receipt,
-            TransactionId = receipt.OrderId,
-            ReceiptKey = $"{PlatformEnvironment.Deployment}_s_iosReceipt_{receipt.OrderId}",
-            ReceiptData = receipt.JSON,
-            Timestamp = receipt.PurchaseTime
-        };
+            throw new ReceiptException(receipt, "Failed to validate iTunes receipt.");
+        }
+
+        return new VerificationResult
+               {
+                   Status = "success",
+                   Response = receipt,
+                   TransactionId = receipt.OrderId,
+                   ReceiptKey = $"{PlatformEnvironment.Deployment}_s_iosReceipt_{receipt.OrderId}",
+                   ReceiptData = receipt.JSON,
+                   Timestamp = receipt.PurchaseTime
+               };
     }
 
+    // Sends the request to attempt to verify receipt data
     public AppleValidation VerifyAppleData(Receipt receipt) // apple takes stringified version of receipt, includes receipt-data, password
     {
         AppleValidation output = null;
@@ -49,7 +57,9 @@ public class AppleService : VerificationService
             .Post(out GenericData response, out int code);
 
         if (!code.Between(200, 299))
+        {
             throw new PlatformException("Failed to verify iTunes receipt.");
+        }
 
         // TODO: convert response to output
         return output;

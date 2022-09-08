@@ -20,6 +20,7 @@ public class TopController : PlatformController
     private readonly GoogleService _googleService;
 #pragma warning restore
 
+    // Attempts to verify a provided receipt
     [HttpPost, Route(template: "receipt")]
     public ObjectResult ReceiptVerify()
     {
@@ -29,34 +30,34 @@ public class TopController : PlatformController
         string signature = Optional<string>(key: "signature"); // for android
         Receipt receipt = Require<Receipt>(key: "receipt");
 
-        if (channel == "aos" && signature == null)
+        switch (channel)
         {
-            throw new ReceiptException(receipt,
-                                       "Receipt called with 'aos' as the channel without a signature. 'aos' receipts require a signature");
+            case "aos" when signature == null:
+                throw new ReceiptException(receipt,
+                                           "Receipt called with 'aos' as the channel without a signature. 'aos' receipts require a signature");
+            // remove when ios iaps are implemented on client/server
+            case "ios":
+                throw new PlatformException(message: "IOS IAPs shouldn't exist yet...?");
         }
 
-        // remove when ios iaps are implemented on client/server
-        if (channel == "ios")
-        {
-            throw new PlatformException(message: "IOS IAPs shouldn't exist yet...?");
-        }
-
-        // Log.Info(owner: Owner.Nathan, message: $"Receipt validation request", data: $"game: {game}, accountId: {accountId}, channel: {channel}, receiptData: {receiptData}");
         Log.Info(owner: Owner.Nathan, message: $"Receipt parsed from receipt data", data: $"Receipt: {receipt.JSON}");
 
         if (game != PlatformEnvironment.GameSecret)
+        {
             throw new PlatformException("Incorrect game key.", code: ErrorCode.Unauthorized);
+        }
 
         VerificationResult validated = channel switch
-        {
-            "aos" => ValidateAndroid(receipt, accountId, signature),
-            "ios" => ValidateApple(receipt, accountId),
-            _ => throw new ReceiptException(receipt, "Receipt called with invalid channel.  Please use 'ios' or 'aos'.")
-        };
+                                       {
+                                           "aos" => ValidateAndroid(receipt, accountId, signature),
+                                           "ios" => ValidateApple(receipt, accountId),
+                                           _ => throw new ReceiptException(receipt, "Receipt called with invalid channel.  Please use 'ios' or 'aos'.")
+                                       };
 
         return Ok(receipt.ResponseObject);
     }
 
+    // Validation process for an ios receipt
     private VerificationResult ValidateApple(Receipt receipt, string accountId)
     {
         receipt.Validate();
@@ -95,6 +96,7 @@ public class TopController : PlatformController
         return output;
     }
 
+    // Validation process for an aos receipt
     private VerificationResult ValidateAndroid(Receipt receipt, string accountId, string signature)
     {
         receipt.Validate();
@@ -108,7 +110,7 @@ public class TopController : PlatformController
         //     .Request($"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{receipt.PackageName}/purchases/products/{receipt.ProductId}/tokens/{receipt.PurchaseToken}")
         //     .OnFailure(response => Log.Local(Owner.Will, response.AsGenericData.JSON, emphasis: Log.LogType.ERROR))
         //     .Get(out GenericData json, out int code);
-        VerificationResult output = _googleService.VerifyGoogle(receipt: receipt, signature: signature);
+        VerificationResult output = GoogleService.VerifyGoogle(receipt: receipt, signature: signature);
 
         switch (output?.Status)
         {

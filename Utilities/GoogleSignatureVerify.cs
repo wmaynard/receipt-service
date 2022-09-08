@@ -3,6 +3,7 @@ using System.Text;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Crypto.Parameters;
 using System.Security.Cryptography;
+// ReSharper disable ArrangeTypeMemberModifiers
 
 namespace Rumble.Platform.ReceiptService.Utilities
 {
@@ -10,7 +11,7 @@ namespace Rumble.Platform.ReceiptService.Utilities
   {
     RSAParameters _rsaKeyInfo;
 
-    public GoogleSignatureVerify(String googlePublicKey)
+    public GoogleSignatureVerify(string googlePublicKey)
     {
       RsaKeyParameters rsaParameters= (RsaKeyParameters) PublicKeyFactory.CreateKey(Convert.FromBase64String(googlePublicKey)); 
 
@@ -41,7 +42,7 @@ namespace Rumble.Platform.ReceiptService.Utilities
                     };
     }
 
-    public bool Verify(String message, String signature)
+    public bool Verify(string message, string signature)
     {
       using RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
       rsa.ImportParameters(_rsaKeyInfo);  

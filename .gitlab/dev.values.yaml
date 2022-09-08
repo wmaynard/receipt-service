@@ -35,7 +35,7 @@ hpa:
   MemUtilizationPercentage: 60
   keda:
     enabled: true
-    requestsPerSecond: "100"
+    requestsPerSecond: "10"
     serverAddress: http://prometheus-prometheus-server.gitlab-managed-apps.svc:80
 gitlab:
   app:
@@ -59,12 +59,11 @@ ingress:
     - "/commerce"
     - "/admin/commerce"
   tls:
-    enabled: true
-    acme: true
+    enabled: false
+    acme: false
     secretName: "receipt-service-dev"
     useDefaultSecret: false
   annotations:
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
     kubernetes.io/ingress.class: "nginx"
   modSecurity:
     enabled: false
@@ -78,19 +77,19 @@ ingress:
 prometheus:
   metrics: false
 livenessProbe:
-  path: "/commerce/receipt/health"
+  path: "/commerce/health"
   initialDelaySeconds: 15
   timeoutSeconds: 15
   scheme: "HTTP"
   probeType: "httpGet"
 readinessProbe:
-  path: "/commerce/receipt/health"
+  path: "/commerce/health"
   initialDelaySeconds: 5
   timeoutSeconds: 3
   scheme: "HTTP"
   probeType: "httpGet"
 startupProbe:
-  path: "/commerce/receipt/health"
+  path: "/commerce/health"
   failureThreshold: 30
   timeoutSeconds: 10
   scheme: "HTTP"

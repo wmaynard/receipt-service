@@ -1,65 +1,118 @@
 .auto-deploy:
   image: "registry.gitlab.com/gitlab-org/cluster-integration/auto-deploy-image:v2.12.0"
   dependencies: []
+  script:
+    - kubectl config use-context $KUBE_CONTEXT
+    - auto-deploy check_kube_domain
+    - auto-deploy download_chart
+    - auto-deploy ensure_namespace
+    - auto-deploy initialize_tiller
+    - auto-deploy create_secret
+    - auto-deploy deploy
+  variables:
+    KUBE_CONTEXT: "platform-services/platform-services-agent:platform-services"
+  rules:
+    - if: '$CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH'
+      when: never
+    - when: manual
 
 dev:
   extends: .auto-deploy
   stage: dev
-  script:
-    - auto-deploy check_kube_domain
-    - auto-deploy download_chart
-    - auto-deploy ensure_namespace
-    - auto-deploy initialize_tiller
-    - auto-deploy create_secret
-    - auto-deploy deploy
+  tags:
+    - cluster
+  variables:
+    KUBE_INGRESS_BASE_DOMAIN: nonprod.tower.cdrentertainment.com
+    KUBE_NAMESPACE: "receipt-service-v2-dev"
   environment:
     name: dev
     url: https://dev.nonprod.tower.cdrentertainment.com/
-  rules:
-    - if: '$CI_KUBERNETES_ACTIVE == null || $CI_KUBERNETES_ACTIVE == ""'
-      when: never
-    - if: '$CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH'
-      when: never
-    - if: '$DEV_ENABLED'
+  
 
 stage-a:
   extends: .auto-deploy
   stage: staging
-  script:
-    - auto-deploy check_kube_domain
-    - auto-deploy download_chart
-    - auto-deploy ensure_namespace
-    - auto-deploy initialize_tiller
-    - auto-deploy create_secret
-    - auto-deploy deploy
+  tags:
+    - cluster
+  variables:
+    KUBE_INGRESS_BASE_DOMAIN: nonprod.tower.cdrentertainment.com
+    KUBE_NAMESPACE: "receipt-service-v2-stage-a"
   environment:
     name: stage-a
     url: https://stage-a.nonprod.tower.cdrentertainment.com/
-  rules:
-    - if: '$CI_KUBERNETES_ACTIVE == null || $CI_KUBERNETES_ACTIVE == ""'
-      when: never
-    - if: '$CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH'
-      when: never
-    - if: '$STAGING_ENABLED'
-      when: manual
 
 stage-b:
   extends: .auto-deploy
   stage: staging
-  script:
-    - auto-deploy check_kube_domain
-    - auto-deploy download_chart
-    - auto-deploy ensure_namespace
-    - auto-deploy initialize_tiller
-    - auto-deploy create_secret
-    - auto-deploy deploy
+  tags:
+    - cluster
+  variables:
+    KUBE_INGRESS_BASE_DOMAIN: nonprod.tower.cdrentertainment.com
+    KUBE_NAMESPACE: "receipt-service-v2-stage-b"
   environment:
     name: stage-b
     url: https://stage-b.nonprod.tower.cdrentertainment.com/
-  rules:
-    - if: '$CI_KUBERNETES_ACTIVE == null || $CI_KUBERNETES_ACTIVE == ""'
-      when: never
-    - if: '$CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH'
-      when: never
-    - if: '$STAGING_ENABLED'
-      when: manual
+
+stage-c:
+  extends: .auto-deploy
+  stage: staging
+  variables:
+    KUBE_INGRESS_BASE_DOMAIN: nonprod.tower.cdrentertainment.com
+    KUBE_NAMESPACE: "receipt-service-v2-stage-c"
+  environment:
+    name: stage-c
+    url: https://stage-c.nonprod.tower.cdrentertainment.com/
+
+TH-production-a:
+  extends: .auto-deploy
+  stage: production
+  variables:
+    KUBE_CONTEXT: "platform-services/platform-services-agent:prod-platform-services"
+    KUBE_INGRESS_BASE_DOMAIN: prod.tower.rumblegames.com
+    KUBE_NAMESPACE: "receipt-service-v2"
+  tags:
+    - production
+  environment:
+    name: production/platform
+    url: https://platform-a.prod.tower.rumblegames.com/
+
+TH-production-b:
+  extends: .auto-deploy
+  stage: production
+  variables:
+    KUBE_CONTEXT: "platform-services/platform-services-agent:prod-b-platform-services"
+    KUBE_INGRESS_BASE_DOMAIN: prod.tower.rumblegames.com
+    KUBE_NAMESPACE: "receipt-service-v2"
+  tags:
+    - production
+  environment:
+    name: production/platform-b
+    url: https://platform-b.prod.tower.rumblegames.com/
+
+
+TT-production-a1:
+  extends: .auto-deploy
+  stage: production
+  variables:
+    KUBE_CONTEXT: "platform-services/platform-services-agent:prod-a1-platform-services"
+    KUBE_INGRESS_BASE_DOMAIN: prod.tower.rumblegames.com
+    KUBE_NAMESPACE: "receipt-service-v2"
+  tags:
+    - production-a1
+  environment:
+    name: TT-Prod-A1
+    url: https://platform-a1.prod.tower.rumblegames.com/
+
+TT-production-a2:
+  extends: .auto-deploy
+  stage: production
+  variables:
+    KUBE_CONTEXT: "platform-services/platform-services-agent:prod-a2-platform-services"
+    KUBE_INGRESS_BASE_DOMAIN: prod.tower.rumblegames.com
+    KUBE_NAMESPACE: "receipt-service-v2"
+  tags:
+    - production-a2
+  environment:
+    name: TT-Prod-A2
+    url: https://platform-a2.prod.tower.rumblegames.com/
+
