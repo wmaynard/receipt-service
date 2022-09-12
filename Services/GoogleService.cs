@@ -30,7 +30,7 @@ public class GoogleService : VerificationService
         }
         catch (Exception e)
         {
-            Log.Error(owner: Owner.Nathan, message: "Error occured while attempting to verify Google receipt signature.", data: $"{e.Message}. Receipt: {receipt.JSON}. Signature: {signature}");
+            Log.Error(owner: Owner.Nathan, message: "Error occured while attempting to verify Google receipt signature.", data: $"{e.Message}. Receipt: {receipt.JSON}");
             return null;
         }
 
@@ -59,7 +59,7 @@ public class GoogleService : VerificationService
                 receiptData: receipt.JSON,
                 timestamp: receipt.PurchaseTime
             );
-            Log.Error(owner: Owner.Nathan, message: "Failure to validate Google receipt.", data: $"Receipt: {receipt.JSON}");
+            Log.Error(owner: Owner.Nathan, message: "Failure to validate Google receipt.", data: $"Receipt: {receipt.JSON}. Signature: {signature}");
         }
         
         return verification;
