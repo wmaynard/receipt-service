@@ -16,6 +16,7 @@ public class Receipt : PlatformCollectionDocument
     internal const string DB_KEY_PURCHASE_TIME  = "purchTme";
     internal const string DB_KEY_PURCHASE_STATE = "purchState";
     internal const string DB_KEY_PURCHASE_TOKEN = "purchTkn";
+    internal const string DB_KEY_QUANTITY       = "qty";
     internal const string DB_KEY_ACKNOWLEDGED   = "acknlged";
     internal const string DB_KEY_ACCOUNT_ID     = "accId";
 
@@ -25,6 +26,7 @@ public class Receipt : PlatformCollectionDocument
     public const string FRIENDLY_KEY_PURCHASE_TIME  = "purchaseTime";
     public const string FRIENDLY_KEY_PURCHASE_STATE = "purchaseState";
     public const string FRIENDLY_KEY_PURCHASE_TOKEN = "purchaseToken";
+    public const string FRIENDLY_KEY_QUANTITY       = "quantity";
     public const string FRIENDLY_KEY_ACKNOWLEDGED   = "acknowledged";
     public const string FRIENDLY_KEY_ACCOUNT_ID     = "accountId";
     
@@ -51,6 +53,10 @@ public class Receipt : PlatformCollectionDocument
     [BsonElement(DB_KEY_PURCHASE_TOKEN)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_PURCHASE_TOKEN)]
     public string PurchaseToken { get; set; }
+    
+    [BsonElement(DB_KEY_QUANTITY)]
+    [JsonInclude, JsonPropertyName(FRIENDLY_KEY_QUANTITY)]
+    public int Quantity { get; set; }
     
     [BsonElement(DB_KEY_ACKNOWLEDGED)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_ACKNOWLEDGED)]

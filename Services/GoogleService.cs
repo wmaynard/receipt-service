@@ -61,7 +61,7 @@ public class GoogleService : VerificationService
             );
             Log.Error(owner: Owner.Nathan, message: "Failure to validate Google receipt.", data: $"Receipt: {receipt.JSON}. Signature: {signature}");
         }
-        
+
         return verification;
     }
 }
