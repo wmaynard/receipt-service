@@ -16,7 +16,7 @@ public class AdminController : PlatformController
 {
 #pragma warning disable
     private readonly Services.ReceiptService _receiptService; // linter says Services. is needed?
-    private readonly RedisService            _redisService; // to be removed when no longer needed
+    private readonly RedisService            _redisService;   // to be removed when no longer needed
 #pragma warning restore
     
     // Retrieves all entries in redis and moves them over to Mongo
@@ -30,7 +30,7 @@ public class AdminController : PlatformController
         }
         catch (Exception e)
         {
-            throw new PlatformException("Error occurred while attempting to update from Redis.");
+            throw new PlatformException("Error occurred while attempting to update from Redis.", inner: e);
         }
         return Ok(message: $"Data successfully fetched from Redis; {counter} new entries entered into Mongo.");
     }

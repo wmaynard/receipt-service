@@ -29,13 +29,14 @@ public class TopController : PlatformController
         string game = Require<string>(key: "game");
         string signature = Optional<string>(key: "signature"); // for android
         Receipt receipt = Require<Receipt>(key: "receipt");
+        GenericData receiptData = Require<GenericData>(key: "receipt"); // for android fallback to verify raw data
 
         switch (channel)
         {
             case "aos" when signature == null:
                 throw new ReceiptException(receipt,
                                            "Receipt called with 'aos' as the channel without a signature. 'aos' receipts require a signature");
-            // remove when ios iaps are implemented on client/server
+            // remove when ios IAPs are implemented on client/server
             case "ios":
                 throw new PlatformException(message: "IOS IAPs shouldn't exist yet...?");
         }
@@ -49,7 +50,7 @@ public class TopController : PlatformController
 
         VerificationResult validated = channel switch
                                        {
-                                           "aos" => ValidateAndroid(receipt, accountId, signature),
+                                           "aos" => ValidateAndroid(receipt, accountId, signature, receiptData),
                                            "ios" => ValidateApple(receipt, accountId),
                                            _ => throw new ReceiptException(receipt, "Receipt called with invalid channel.  Please use 'ios' or 'aos'.")
                                        };
@@ -97,7 +98,7 @@ public class TopController : PlatformController
     }
 
     // Validation process for an aos receipt
-    private VerificationResult ValidateAndroid(Receipt receipt, string accountId, string signature)
+    private VerificationResult ValidateAndroid(Receipt receipt, string accountId, string signature, GenericData receiptData)
     {
         receipt.Validate();
         
@@ -110,7 +111,7 @@ public class TopController : PlatformController
         //     .Request($"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{receipt.PackageName}/purchases/products/{receipt.ProductId}/tokens/{receipt.PurchaseToken}")
         //     .OnFailure(response => Log.Local(Owner.Will, response.AsGenericData.JSON, emphasis: Log.LogType.ERROR))
         //     .Get(out GenericData json, out int code);
-        VerificationResult output = GoogleService.VerifyGoogle(receipt: receipt, signature: signature);
+        VerificationResult output = GoogleService.VerifyGoogle(receipt: receipt, signature: signature, receiptData: receiptData);
 
         switch (output?.Status)
         {
@@ -121,7 +122,7 @@ public class TopController : PlatformController
             case "success":
                 Log.Info(owner: Owner.Nathan, message: "Successful Google receipt processed.");
 
-                if (_googleService.Find(filter: receipt => receipt.OrderId == output.TransactionId).FirstOrDefault() != null)
+                if (_googleService.Find(filter: existingReceipt => existingReceipt.OrderId == output.TransactionId).FirstOrDefault() != null)
                 {
                     throw new ReceiptException(receipt, "Google receipt has already been redeemed.");
                 }
