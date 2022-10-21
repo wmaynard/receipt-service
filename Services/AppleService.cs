@@ -2,6 +2,7 @@ using Rumble.Platform.Common.Exceptions;
 using Rumble.Platform.Common.Extensions;
 using Rumble.Platform.Common.Services;
 using Rumble.Platform.Common.Utilities;
+using Rumble.Platform.Data;
 using Rumble.Platform.ReceiptService.Exceptions;
 using Rumble.Platform.ReceiptService.Models;
 // ReSharper disable MemberCanBePrivate.Global
@@ -49,12 +50,12 @@ public class AppleService : VerificationService
         
         _apiService
             .Request(PlatformEnvironment.Require<string>("iosVerifyReceiptUrl"))
-            .SetPayload(new GenericData
+            .SetPayload(new RumbleJson
             {
                 { "receipt-data", receipt.JSON }, // does this need Encoding.UTF8.GetBytes()?
                 { "password", PlatformEnvironment.Require<string>(key: "sharedSecret") }
             })
-            .Post(out GenericData response, out int code);
+            .Post(out RumbleJson response, out int code);
 
         if (!code.Between(200, 299))
         {

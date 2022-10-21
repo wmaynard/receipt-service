@@ -6,6 +6,7 @@ using Rumble.Platform.Common.Enums;
 using Rumble.Platform.Common.Exceptions;
 using Rumble.Platform.Common.Utilities;
 using Rumble.Platform.Common.Web;
+using Rumble.Platform.Data;
 using Rumble.Platform.ReceiptService.Exceptions;
 using Rumble.Platform.ReceiptService.Models;
 using Rumble.Platform.ReceiptService.Services;
@@ -29,7 +30,7 @@ public class TopController : PlatformController
         string game = Require<string>(key: "game");
         string signature = Optional<string>(key: "signature"); // for android
         Receipt receipt = Require<Receipt>(key: "receipt");
-        GenericData receiptData = Require<GenericData>(key: "receipt"); // for android fallback to verify raw data
+        RumbleJson receiptData = Require<RumbleJson>(key: "receipt"); // for android fallback to verify raw data
 
         switch (channel)
         {
@@ -98,7 +99,7 @@ public class TopController : PlatformController
     }
 
     // Validation process for an aos receipt
-    private VerificationResult ValidateAndroid(Receipt receipt, string accountId, string signature, GenericData receiptData)
+    private VerificationResult ValidateAndroid(Receipt receipt, string accountId, string signature, RumbleJson receiptData)
     {
         receipt.Validate();
         
