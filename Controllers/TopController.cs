@@ -58,8 +58,8 @@ public class TopController : PlatformController
 
         return Ok(new RumbleJson
                   {
-                      {"success", true},
-                      {"receipt", receipt.ResponseObject}
+                      {"success", validated.Status == "success"},
+                      {"receipt", validated.Response}
                   });
     }
 
