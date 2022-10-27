@@ -56,7 +56,11 @@ public class TopController : PlatformController
                                            _ => throw new ReceiptException(receipt, "Receipt called with invalid channel.  Please use 'ios' or 'aos'.")
                                        };
 
-        return Ok(receipt.ResponseObject);
+        return Ok(new RumbleJson
+                  {
+                      {"success", true},
+                      {"receipt", receipt.ResponseObject}
+                  });
     }
 
     // Validation process for an ios receipt
