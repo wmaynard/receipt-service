@@ -54,12 +54,13 @@ public class AppleService : VerificationService
     // Sends the request to attempt to verify receipt data
     public AppleValidation VerifyAppleData(string receipt) // apple takes stringified version of receipt, includes receipt-data, password
     {
+        string sharedSecret = PlatformEnvironment.Require(key: "sharedSecret");
         _apiService
             .Request(PlatformEnvironment.Require(key: "iosVerifyReceiptUrl"))
             .SetPayload(new RumbleJson
             {
                 { "receipt-data", receipt }, // does this need Encoding.UTF8.GetBytes()?
-                { "password", PlatformEnvironment.Require(key: "sharedSecret") }
+                { "password", sharedSecret }
             })
             .Post(out AppleValidation response, out int code);
 
