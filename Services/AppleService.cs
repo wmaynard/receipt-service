@@ -1,3 +1,5 @@
+using System;
+using RCL.Logging;
 using Rumble.Platform.Common.Exceptions;
 using Rumble.Platform.Common.Extensions;
 using Rumble.Platform.Common.Services;
@@ -23,47 +25,85 @@ public class AppleService : VerificationService
     // requires password
     // requires exclude-old-transactions if auto-renewable subscriptions
     // assuming no subscriptions for now, possible to put in later if needed
-    public VerificationResult VerifyApple(Receipt receipt, string signature = null)
+    public AppleVerificationResult VerifyApple(string receipt, string signature = null)
     {
         AppleValidation verified = VerifyAppleData(receipt);
 
-        if (verified?.Status == 0)
+        if (verified.Status == 0)
         {
-            throw new ReceiptException(receipt, "Failed to validate iTunes receipt.");
+            return new AppleVerificationResult
+                   {
+                       Status = "success",
+                       Response = verified.AppleReceipt,
+                       TransactionId = verified.AppleReceipt.InApp.TransactionId,
+                       ReceiptKey = $"{PlatformEnvironment.Deployment}_s_iosReceipt_{verified.AppleReceipt.InApp.TransactionId}",
+                       ReceiptData = verified.AppleReceipt.JSON,
+                       Timestamp = Convert.ToInt64(verified.AppleReceipt.ReceiptCreationDateMs)
+                   };
         }
-
-        return new VerificationResult
+        return new AppleVerificationResult
                {
-                   Status = "success",
-                   Response = receipt,
-                   TransactionId = receipt.OrderId,
-                   ReceiptKey = $"{PlatformEnvironment.Deployment}_s_iosReceipt_{receipt.OrderId}",
-                   ReceiptData = receipt.JSON,
-                   Timestamp = receipt.PurchaseTime
+                   Status = "failed",
+                   Response = verified?.AppleReceipt,
+                   TransactionId = verified?.AppleReceipt.InApp.TransactionId,
+                   ReceiptKey = null,
+                   ReceiptData = verified?.AppleReceipt.JSON,
+                   Timestamp = Convert.ToInt64(verified?.AppleReceipt.ReceiptCreationDateMs)
                };
     }
 
     // Sends the request to attempt to verify receipt data
-    public AppleValidation VerifyAppleData(Receipt receipt) // apple takes stringified version of receipt, includes receipt-data, password
+    public AppleValidation VerifyAppleData(string receipt) // apple takes stringified version of receipt, includes receipt-data, password
     {
-        AppleValidation output = null;
-        
         _apiService
             .Request(PlatformEnvironment.Require<string>("iosVerifyReceiptUrl"))
             .SetPayload(new RumbleJson
             {
-                { "receipt-data", receipt.JSON }, // does this need Encoding.UTF8.GetBytes()?
+                { "receipt-data", receipt }, // does this need Encoding.UTF8.GetBytes()?
                 { "password", PlatformEnvironment.Require<string>(key: "sharedSecret") }
             })
-            .Post(out RumbleJson response, out int code);
+            .Post(out AppleValidation response, out int code);
 
         if (!code.Between(200, 299))
         {
-            throw new PlatformException("Failed to verify iTunes receipt.");
+            Log.Error(owner: Owner.Nathan, message: $"Request to the Apple's App Store failed with code {code}.");
+            throw new PlatformException("Request to the Apple's App Store failed.");
         }
 
-        // TODO: convert response to output
-        return output;
+        if (response.Status == 21007)
+        {
+            Log.Warn(owner: Owner.Nathan, message: "Apple receipt validation failed. Falling back to attempt validating in sandbox...");
+            _apiService
+                .Request(PlatformEnvironment.Require<string>("iosVerifyReceiptSandbox"))
+                .SetPayload(new RumbleJson
+                            {
+                                { "receipt-data", receipt }, // does this need Encoding.UTF8.GetBytes()?
+                                { "password", PlatformEnvironment.Require<string>(key: "sharedSecret") }
+                            })
+                .Post(out AppleValidation sandboxResponse, out int sandboxCode);
+            
+            if (!sandboxCode.Between(200, 299))
+            {
+                Log.Error(owner: Owner.Nathan, message: $"Request to the Apple's App Store sandbox failed with code {code}.");
+                throw new PlatformException("Request to the Apple's App Store sandbox failed.");
+            }
+
+            if (sandboxResponse.Status != 0)
+            {
+                Log.Error(owner: Owner.Nathan, message: "Failed to validate iOS receipt in sandbox.");
+                throw new PlatformException("Failed to validate iOS receipt in sandbox.");
+            }
+
+            return sandboxResponse;
+        }
+
+        if (response.Status != 0)
+        {
+            Log.Error(owner: Owner.Nathan, message: "Failed to validate iOS receipt.");
+            throw new PlatformException("Failed to validate iOS receipt.");
+        }
+
+        return response;
     }
 }
 

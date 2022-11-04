@@ -28,47 +28,49 @@ public class TopController : PlatformController
         string accountId = Require<string>(key: "account");
         string channel = Require<string>(key: "channel");
         string game = Require<string>(key: "game");
-        string signature = Optional<string>(key: "signature"); // for android
-        Receipt receipt = Require<Receipt>(key: "receipt");
-        RumbleJson receiptData = Require<RumbleJson>(key: "receipt"); // for android fallback to verify raw data
-
-        switch (channel)
-        {
-            case "aos" when signature == null:
-                throw new ReceiptException(receipt,
-                                           "Receipt called with 'aos' as the channel without a signature. 'aos' receipts require a signature");
-            // remove when ios IAPs are implemented on client/server
-            case "ios":
-                throw new PlatformException(message: "IOS IAPs shouldn't exist yet...?");
-        }
-
-        Log.Info(owner: Owner.Nathan, message: $"Receipt parsed from receipt data", data: $"Receipt: {receipt.JSON}");
-
+        
         if (game != PlatformEnvironment.GameSecret)
         {
             throw new PlatformException("Incorrect game key.", code: ErrorCode.Unauthorized);
         }
 
-        VerificationResult validated = channel switch
-                                       {
-                                           "aos" => ValidateAndroid(receipt, accountId, signature, receiptData),
-                                           "ios" => ValidateApple(receipt, accountId),
-                                           _ => throw new ReceiptException(receipt, "Receipt called with invalid channel.  Please use 'ios' or 'aos'.")
-                                       };
-
-        return Ok(new RumbleJson
-                  {
-                      {"success", validated.Status == "success"},
-                      {"receipt", validated.Response}
-                  });
+        switch (channel)
+        {
+            case "aos":
+                string signature = Optional<string>(key: "signature"); // for android
+                Receipt receipt = Require<Receipt>(key: "receipt");
+                RumbleJson receiptData = Require<RumbleJson>(key: "receipt"); // for android fallback to verify raw data
+                Log.Info(owner: Owner.Nathan, message: $"Receipt parsed from receipt data", data: $"Receipt: {receipt.JSON}");
+                
+                if (signature == null)
+                {
+                    throw new ReceiptException(receipt,
+                                               "Receipt called with 'aos' as the channel without a signature. 'aos' receipts require a signature");
+                }
+                VerificationResult validated = ValidateAndroid(receipt, accountId, signature, receiptData);
+                return Ok(new RumbleJson
+                          {
+                              {"success", validated.Status == "success"},
+                              {"receipt", validated.Response}
+                          });
+            case "ios":
+                string appleReceipt = Require<string>(key: "receipt");
+                AppleVerificationResult appleValidated = ValidateApple(appleReceipt, accountId);
+                return Ok(new RumbleJson
+                          {
+                              {"success", appleValidated.Status == "success"},
+                              {"receipt", appleValidated.Response}
+                          });
+            default:
+                throw
+                    new PlatformException(message: "Receipt called with invalid channel.  Please use 'ios' or 'aos'.");
+        }
     }
 
     // Validation process for an ios receipt
-    private VerificationResult ValidateApple(Receipt receipt, string accountId)
+    private AppleVerificationResult ValidateApple(string receipt, string accountId)
     {
-        receipt.Validate();
-        
-        VerificationResult output = _appleService.VerifyApple(receipt: receipt);
+        AppleVerificationResult output = _appleService.VerifyApple(receipt: receipt);
             
         // response from apple
         // string environment (Production, Sandbox)
@@ -82,20 +84,20 @@ public class TopController : PlatformController
         switch (output?.Status)
         {
             case null:
-                throw new ReceiptException(receipt, message: "Error validating Apple receipt.");
+                throw new AppleReceiptException(output?.Response, message: "Error validating Apple receipt.");
             case "failed":
-                throw new ReceiptException(receipt, message: "Failed to validate Apple receipt. Order does not exist.");
+                throw new AppleReceiptException(output.Response, message: "Failed to validate Apple receipt. Order does not exist.");
             case "success":
                 Log.Info(owner: Owner.Nathan, message: "Successful Apple receipt processed.");
 
-                if (_appleService.Exists(receipt?.OrderId))
+                if (_appleService.Exists(output.TransactionId))
                 {
-                    throw new ReceiptException(receipt, "Apple receipt has already been redeemed.");
+                    throw new AppleReceiptException(output.Response, "Apple receipt has already been redeemed.");
                 }
 
-                receipt.AccountId = accountId;
+                output.Response.AccountId = accountId;
 
-                _appleService.Create(receipt);
+                _appleService.Create(output.Response);
                 break;
         }
 
