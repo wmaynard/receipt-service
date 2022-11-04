@@ -98,8 +98,8 @@ public class TopController : PlatformController
 
                 output.Response.AccountId = accountId;
                 output.Response.OrderId = output.TransactionId;
-                output.Response.PackageName = output.Response.InApp[0].ProductId;
-                output.Response.ProductId = output.Response.BundleId;
+                output.Response.PackageName = output.Response.BundleId;
+                output.Response.ProductId = output.Response.InApp[0].ProductId;
                 output.Response.PurchaseTime = output.Timestamp;
                 output.Response.Quantity = Int32.Parse(output.Response.InApp[0].Quantity);
 
