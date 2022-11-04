@@ -23,17 +23,17 @@ public class AppleInApp : PlatformDataModel
 	internal const string DB_KEY_IN_APP_OWNERSHIP_TYPE      = "inAppOwnType";
 	
 	public const string FRIENDLY_KEY_QUANTITY                   = "quantity";
-	public const string FRIENDLY_KEY_PRODUCT_ID                 = "productId";
-	public const string FRIENDLY_KEY_TRANSACTION_ID             = "transactionId";
-	public const string FRIENDLY_KEY_ORIGINAL_TRANSACTION_ID    = "originalTransactionId";
-	public const string FRIENDLY_KEY_PURCHASE_DATE              = "purchaseDate";
-	public const string FRIENDLY_KEY_PURCHASE_DATE_MS           = "purchaseDateMs";
-	public const string FRIENDLY_KEY_PURCHASE_DATE_PST          = "purchaseDatePst";
-	public const string FRIENDLY_KEY_ORIGINAL_PURCHASE_DATE     = "originalPurchaseDate";
-	public const string FRIENDLY_KEY_ORIGINAL_PURCHASE_DATE_MS  = "originalPurchaseDateMs";
-	public const string FRIENDLY_KEY_ORIGINAL_PURCHASE_DATE_PST = "originalPurchaseDatePst";
-	public const string FRIENDLY_KEY_IS_TRIAL_PERIOD            = "isTrialPeriod";
-	public const string FRIENDLY_KEY_IN_APP_OWNERSHIP_TYPE      = "inAppOwnershipType";
+	public const string FRIENDLY_KEY_PRODUCT_ID                 = "product_id";
+	public const string FRIENDLY_KEY_TRANSACTION_ID             = "transaction_id";
+	public const string FRIENDLY_KEY_ORIGINAL_TRANSACTION_ID    = "original_transaction_id";
+	public const string FRIENDLY_KEY_PURCHASE_DATE              = "purchase_date";
+	public const string FRIENDLY_KEY_PURCHASE_DATE_MS           = "purchase_date_ms";
+	public const string FRIENDLY_KEY_PURCHASE_DATE_PST          = "purchase_date_pst";
+	public const string FRIENDLY_KEY_ORIGINAL_PURCHASE_DATE     = "original_purchase_date";
+	public const string FRIENDLY_KEY_ORIGINAL_PURCHASE_DATE_MS  = "original_purchase_date_ms";
+	public const string FRIENDLY_KEY_ORIGINAL_PURCHASE_DATE_PST = "original_purchase_date_pst";
+	public const string FRIENDLY_KEY_IS_TRIAL_PERIOD            = "is_trial_period";
+	public const string FRIENDLY_KEY_IN_APP_OWNERSHIP_TYPE      = "in_app_ownership_type";
 	
 	[BsonElement(DB_KEY_QUANTITY)]
 	[JsonInclude, JsonPropertyName(FRIENDLY_KEY_QUANTITY)]

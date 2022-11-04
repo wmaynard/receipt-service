@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using RCL.Logging;
@@ -96,6 +97,11 @@ public class TopController : PlatformController
                 }
 
                 output.Response.AccountId = accountId;
+                output.Response.OrderId = output.TransactionId;
+                output.Response.PackageName = output.Response.InApp[0].ProductId;
+                output.Response.ProductId = output.Response.BundleId;
+                output.Response.PurchaseTime = output.Timestamp;
+                output.Response.Quantity = Int32.Parse(output.Response.InApp[0].Quantity);
 
                 _appleService.Create(output.Response);
                 break;

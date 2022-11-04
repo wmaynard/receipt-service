@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
-using Rumble.Platform.Common.Models;
 using Rumble.Platform.Data;
 
 // ReSharper disable MemberCanBePrivate.Global
@@ -53,7 +52,7 @@ public class Receipt : PlatformCollectionDocument
     public int PurchaseState { get; set; }
     
     [BsonElement(DB_KEY_PURCHASE_TOKEN)]
-    [JsonInclude, JsonPropertyName(FRIENDLY_KEY_PURCHASE_TOKEN)]
+    [JsonInclude, JsonPropertyName(FRIENDLY_KEY_PURCHASE_TOKEN), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string PurchaseToken { get; set; }
     
     [BsonElement(DB_KEY_QUANTITY)]

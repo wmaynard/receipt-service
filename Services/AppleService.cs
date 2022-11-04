@@ -5,7 +5,6 @@ using Rumble.Platform.Common.Extensions;
 using Rumble.Platform.Common.Services;
 using Rumble.Platform.Common.Utilities;
 using Rumble.Platform.Data;
-using Rumble.Platform.ReceiptService.Exceptions;
 using Rumble.Platform.ReceiptService.Models;
 // ReSharper disable MemberCanBePrivate.Global
 
@@ -34,21 +33,21 @@ public class AppleService : VerificationService
             return new AppleVerificationResult
                    {
                        Status = "success",
-                       Response = verified.AppleReceipt,
-                       TransactionId = verified.AppleReceipt.InApp.TransactionId,
-                       ReceiptKey = $"{PlatformEnvironment.Deployment}_s_iosReceipt_{verified.AppleReceipt.InApp.TransactionId}",
-                       ReceiptData = verified.AppleReceipt.JSON,
-                       Timestamp = Convert.ToInt64(verified.AppleReceipt.ReceiptCreationDateMs)
+                       Response = verified.Receipt,
+                       TransactionId = verified.Receipt.InApp[0].TransactionId,
+                       ReceiptKey = $"{PlatformEnvironment.Deployment}_s_iosReceipt_{verified.Receipt.InApp[0].TransactionId}",
+                       ReceiptData = verified.Receipt.JSON,
+                       Timestamp = Convert.ToInt64(verified.Receipt.ReceiptCreationDateMs)
                    };
         }
         return new AppleVerificationResult
                {
                    Status = "failed",
-                   Response = verified?.AppleReceipt,
-                   TransactionId = verified?.AppleReceipt.InApp.TransactionId,
+                   Response = verified?.Receipt,
+                   TransactionId = verified?.Receipt.InApp[0].TransactionId,
                    ReceiptKey = null,
-                   ReceiptData = verified?.AppleReceipt.JSON,
-                   Timestamp = Convert.ToInt64(verified?.AppleReceipt.ReceiptCreationDateMs)
+                   ReceiptData = verified?.Receipt.JSON,
+                   Timestamp = Convert.ToInt64(verified?.Receipt.ReceiptCreationDateMs)
                };
     }
 
@@ -80,7 +79,9 @@ public class AppleService : VerificationService
                                 { "receipt-data", receipt }, // does this need Encoding.UTF8.GetBytes()?
                                 { "password", PlatformEnvironment.Require<string>(key: "sharedSecret") }
                             })
-                .Post(out AppleValidation sandboxResponse, out int sandboxCode);
+                .Post(out RumbleJson sbResponse, out int sandboxCode);
+
+            AppleValidation sandboxResponse = sbResponse.ToModel<AppleValidation>();
             
             if (!sandboxCode.Between(200, 299))
             {

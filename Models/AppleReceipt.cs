@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
 // ReSharper disable MemberCanBePrivate.Global
@@ -27,24 +28,24 @@ public class AppleReceipt : Receipt
 	internal const string DB_KEY_ORIGINAL_APPLICATION_VERSION = "origAppVer";
 	internal const string DB_KEY_IN_APP                       = "inApp";
 	
-	public const string FRIENDLY_KEY_RECEIPT_TYPE                 = "receiptType";
-	public const string FRIENDLY_KEY_ADAM_ID                      = "adamId";
-	public const string FRIENDLY_KEY_APP_ITEM_ID                  = "appItemId";
-	public const string FRIENDLY_KEY_BUNDLE_ID                    = "bundleId";
-	public const string FRIENDLY_KEY_APPLICATION_VERSION          = "applicationVersion";
-	public const string FRIENDLY_KEY_DOWNLOAD_ID                  = "downloadId";
-	public const string FRIENDLY_KEY_VERSION_EXTERNAL_IDENTIFIER  = "versionExternalIdentifier";
-	public const string FRIENDLY_KEY_RECEIPT_CREATION_DATE        = "receiptCreationDate";
-	public const string FRIENDLY_KEY_RECEIPT_CREATION_DATE_MS     = "receiptCreationDateMs";
-	public const string FRIENDLY_KEY_RECEIPT_CREATION_DATE_PST    = "receiptCreationDatePst";
-	public const string FRIENDLY_KEY_REQUEST_DATE                 = "requestDate";
-	public const string FRIENDLY_KEY_REQUEST_DATE_MS              = "requestDateMs";
-	public const string FRIENDLY_KEY_REQUEST_DATE_PST             = "requestDatePst";
-	public const string FRIENDLY_KEY_ORIGINAL_PURCHASE_DATE       = "originalPurchaseDate";
-	public const string FRIENDLY_KEY_ORIGINAL_PURCHASE_DATE_MS    = "originalPurchaseDateMs";
-	public const string FRIENDLY_KEY_ORIGINAL_PURCHASE_DATE_PST   = "originalPurchaseDatePst";
-	public const string FRIENDLY_KEY_ORIGINAL_APPLICATION_VERSION = "originalApplicationVersion";
-	public const string FRIENDLY_KEY_IN_APP                       = "inApp";
+	public const string FRIENDLY_KEY_RECEIPT_TYPE                 = "receipt_type";
+	public const string FRIENDLY_KEY_ADAM_ID                      = "adam_id";
+	public const string FRIENDLY_KEY_APP_ITEM_ID                  = "app_item_id";
+	public const string FRIENDLY_KEY_BUNDLE_ID                    = "bundle_id";
+	public const string FRIENDLY_KEY_APPLICATION_VERSION          = "application_version";
+	public const string FRIENDLY_KEY_DOWNLOAD_ID                  = "download_id";
+	public const string FRIENDLY_KEY_VERSION_EXTERNAL_IDENTIFIER  = "version_external_identifier";
+	public const string FRIENDLY_KEY_RECEIPT_CREATION_DATE        = "receipt_creation_date";
+	public const string FRIENDLY_KEY_RECEIPT_CREATION_DATE_MS     = "receipt_creation_date_ms";
+	public const string FRIENDLY_KEY_RECEIPT_CREATION_DATE_PST    = "receipt_creation_date_pst";
+	public const string FRIENDLY_KEY_REQUEST_DATE                 = "request_date";
+	public const string FRIENDLY_KEY_REQUEST_DATE_MS              = "request_date_ms";
+	public const string FRIENDLY_KEY_REQUEST_DATE_PST             = "request_date_pst";
+	public const string FRIENDLY_KEY_ORIGINAL_PURCHASE_DATE       = "original_purchase_date";
+	public const string FRIENDLY_KEY_ORIGINAL_PURCHASE_DATE_MS    = "original_purchase_date_ms";
+	public const string FRIENDLY_KEY_ORIGINAL_PURCHASE_DATE_PST   = "original_purchase_date_pst";
+	public const string FRIENDLY_KEY_ORIGINAL_APPLICATION_VERSION = "original_application_version";
+	public const string FRIENDLY_KEY_IN_APP                       = "in_app";
 	
 	[BsonElement(DB_KEY_RECEIPT_TYPE)]
 	[JsonInclude, JsonPropertyName(FRIENDLY_KEY_RECEIPT_TYPE)]
@@ -116,5 +117,5 @@ public class AppleReceipt : Receipt
 	
 	[BsonElement(DB_KEY_IN_APP)]
 	[JsonInclude, JsonPropertyName(FRIENDLY_KEY_IN_APP)]
-	public AppleInApp InApp { get; set; }
+	public List<AppleInApp> InApp { get; set; }
 }
