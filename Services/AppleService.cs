@@ -55,6 +55,7 @@ public class AppleService : VerificationService
     public AppleValidation VerifyAppleData(string receipt) // apple takes stringified version of receipt, includes receipt-data, password
     {
         string sharedSecret = PlatformEnvironment.Require(key: "appleSharedSecret"); // for some reason this is trying to get from request payload
+        
         _apiService
             .Request(PlatformEnvironment.Require(key: "iosVerifyReceiptUrl"))
             .SetPayload(new RumbleJson
