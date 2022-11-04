@@ -54,7 +54,7 @@ public class AppleService : VerificationService
     // Sends the request to attempt to verify receipt data
     public AppleValidation VerifyAppleData(string receipt) // apple takes stringified version of receipt, includes receipt-data, password
     {
-        string sharedSecret = PlatformEnvironment.Require(key: "sharedSecret");
+        string sharedSecret = PlatformEnvironment.Require(key: "appleSharedSecret"); // for some reason this is trying to get from request payload
         _apiService
             .Request(PlatformEnvironment.Require(key: "iosVerifyReceiptUrl"))
             .SetPayload(new RumbleJson
@@ -74,11 +74,11 @@ public class AppleService : VerificationService
         {
             Log.Warn(owner: Owner.Nathan, message: "Apple receipt validation failed. Falling back to attempt validating in sandbox...");
             _apiService
-                .Request(PlatformEnvironment.Require<string>("iosVerifyReceiptSandbox"))
+                .Request(PlatformEnvironment.Require("iosVerifyReceiptSandbox"))
                 .SetPayload(new RumbleJson
                             {
                                 { "receipt-data", receipt }, // does this need Encoding.UTF8.GetBytes()?
-                                { "password", PlatformEnvironment.Require<string>(key: "sharedSecret") }
+                                { "password", sharedSecret }
                             })
                 .Post(out RumbleJson sbResponse, out int sandboxCode);
 
