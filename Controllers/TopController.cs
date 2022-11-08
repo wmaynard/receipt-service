@@ -89,7 +89,7 @@ public class TopController : PlatformController
             case "failed":
                 throw new AppleReceiptException(output.Response, message: "Failed to validate Apple receipt. Order does not exist.");
             case "success":
-                Log.Info(owner: Owner.Nathan, message: "Successful Apple receipt processed.");
+                Log.Info(owner: Owner.Nathan, message: $"Successful Apple receipt processed.", data: output.Response);
 
                 if (_appleService.Exists(output.TransactionId))
                 {
@@ -133,7 +133,7 @@ public class TopController : PlatformController
             case "failed":
                 throw new ReceiptException(receipt, message: "Failed to validate Google receipt. Order does not exist.");
             case "success":
-                Log.Info(owner: Owner.Nathan, message: "Successful Google receipt processed.");
+                Log.Info(owner: Owner.Nathan, message: $"Successful Google receipt processed.", data: receipt);
 
                 if (_googleService.Find(filter: existingReceipt => existingReceipt.OrderId == output.TransactionId).FirstOrDefault() != null)
                 {
