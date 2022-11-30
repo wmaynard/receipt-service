@@ -18,8 +18,9 @@ namespace Rumble.Platform.ReceiptService.Controllers;
 public class TopController : PlatformController
 {
 #pragma warning disable
-    private readonly AppleService _appleService;
-    private readonly GoogleService _googleService;
+    private readonly AppleService            _appleService;
+    private readonly Services.ReceiptService _receiptService;
+    private readonly GoogleService           _googleService;
 #pragma warning restore
 
     // Attempts to verify a provided receipt
@@ -56,11 +57,12 @@ public class TopController : PlatformController
                           });
             case "ios":
                 string appleReceipt = Require<string>(key: "receipt");
-                AppleVerificationResult appleValidated = ValidateApple(appleReceipt, accountId);
+                string transactionId = Require<string>(key: "transactionId");
+                AppleVerificationResult appleValidated = ValidateApple(appleReceipt, accountId, transactionId);
                 return Ok(new RumbleJson
                           {
                               {"success", appleValidated.Status == "success"},
-                              {"receipt", appleValidated.Response}
+                              {"receipt", appleValidated.Response.InApp.Find(inApp => inApp.TransactionId == transactionId)}
                           });
             default:
                 throw
@@ -69,9 +71,9 @@ public class TopController : PlatformController
     }
 
     // Validation process for an ios receipt
-    private AppleVerificationResult ValidateApple(string receipt, string accountId)
+    private AppleVerificationResult ValidateApple(string receipt, string accountId, string transactionId)
     {
-        AppleVerificationResult output = _appleService.VerifyApple(receipt: receipt);
+        AppleVerificationResult output = _appleService.VerifyApple(receipt: receipt, transactionId: transactionId);
             
         // response from apple
         // string environment (Production, Sandbox)
@@ -96,14 +98,25 @@ public class TopController : PlatformController
                     throw new AppleReceiptException(output.Response, "Apple receipt has already been redeemed.");
                 }
 
-                output.Response.AccountId = accountId;
-                output.Response.OrderId = output.TransactionId;
-                output.Response.PackageName = output.Response.BundleId;
-                output.Response.ProductId = output.Response.InApp[0].ProductId;
-                output.Response.PurchaseTime = output.Timestamp;
-                output.Response.Quantity = Int32.Parse(output.Response.InApp[0].Quantity);
+                Receipt newReceipt = new Receipt();
 
-                _appleService.Create(output.Response);
+                newReceipt.AccountId = accountId;
+                newReceipt.OrderId = output.TransactionId;
+                newReceipt.PackageName = output.Response.BundleId;
+                newReceipt.ProductId = output.Response.InApp[0].ProductId;
+                newReceipt.PurchaseTime = output.Timestamp;
+                newReceipt.PurchaseState = 0;
+                string quantity = output.Response.InApp.Find(inApp => inApp.TransactionId == transactionId)
+                                        ?.Quantity;
+                if (quantity != null)
+                {
+                    newReceipt.Quantity =
+                        Int32.Parse(quantity);
+                }
+
+                newReceipt.Acknowledged = false;
+
+                _receiptService.Create(newReceipt);
                 break;
         }
 

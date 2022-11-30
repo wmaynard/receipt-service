@@ -24,18 +24,25 @@ public class AppleService : VerificationService
     // requires password
     // requires exclude-old-transactions if auto-renewable subscriptions
     // assuming no subscriptions for now, possible to put in later if needed
-    public AppleVerificationResult VerifyApple(string receipt, string signature = null)
+    public AppleVerificationResult VerifyApple(string receipt, string transactionId)
     {
         AppleValidation verified = VerifyAppleData(receipt);
 
         if (verified.Status == 0)
         {
+            AppleInApp inApp = verified.Receipt.InApp.Find(appleInApp => appleInApp.TransactionId == transactionId);
+            if (inApp == null)
+            {
+                throw new PlatformException(message:
+                                            "Receipt validated correctly with Apple but no matching transaction ID was found.");
+            }
+        
             return new AppleVerificationResult
                    {
                        Status = "success",
                        Response = verified.Receipt,
-                       TransactionId = verified.Receipt.InApp[0].TransactionId,
-                       ReceiptKey = $"{PlatformEnvironment.Deployment}_s_iosReceipt_{verified.Receipt.InApp[0].TransactionId}",
+                       TransactionId = transactionId,
+                       ReceiptKey = $"{PlatformEnvironment.Deployment}_s_iosReceipt_{transactionId}",
                        ReceiptData = verified.Receipt.JSON,
                        Timestamp = Convert.ToInt64(verified.Receipt.ReceiptCreationDateMs)
                    };
@@ -44,7 +51,7 @@ public class AppleService : VerificationService
                {
                    Status = "failed",
                    Response = verified?.Receipt,
-                   TransactionId = verified?.Receipt.InApp[0].TransactionId,
+                   TransactionId = transactionId,
                    ReceiptKey = null,
                    ReceiptData = verified?.Receipt.JSON,
                    Timestamp = Convert.ToInt64(verified?.Receipt.ReceiptCreationDateMs)
