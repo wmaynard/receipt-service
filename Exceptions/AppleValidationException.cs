@@ -9,9 +9,9 @@ namespace Rumble.Platform.ReceiptService.Exceptions;
 
 public class AppleReceiptException : PlatformException
 {
-	public AppleReceipt Receipt { get; init; }
+	public string Receipt { get; init; }
     
-	public AppleReceiptException(AppleReceipt receipt, string message) : base(message, code: ErrorCode.ModelFailedValidation)
+	public AppleReceiptException(string receipt, string message) : base(message, code: ErrorCode.ModelFailedValidation)
 	{
 		Receipt = receipt;
 	}

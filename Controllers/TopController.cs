@@ -52,7 +52,7 @@ public class TopController : PlatformController
                 VerificationResult validated = ValidateAndroid(receipt, accountId, signature, receiptData);
                 return Ok(new RumbleJson
                           {
-                              {"success", validated.Status == "success"},
+                              {"success", validated.Status},
                               {"receipt", validated.Response}
                           });
             case "ios":
@@ -61,7 +61,7 @@ public class TopController : PlatformController
                 AppleVerificationResult appleValidated = ValidateApple(appleReceipt, accountId, transactionId);
                 return Ok(new RumbleJson
                           {
-                              {"success", appleValidated.Status == "success"},
+                              {"success", appleValidated.Status},
                               {"receipt", appleValidated.Response.InApp.Find(inApp => inApp.TransactionId == transactionId)}
                           });
             default:
@@ -73,7 +73,7 @@ public class TopController : PlatformController
     // Validation process for an ios receipt
     private AppleVerificationResult ValidateApple(string receipt, string accountId, string transactionId)
     {
-        AppleVerificationResult output = _appleService.VerifyApple(receipt: receipt, transactionId: transactionId);
+        AppleVerificationResult output = _appleService.VerifyApple(receipt: receipt, transactionId: transactionId, accountId: accountId);
             
         // response from apple
         // string environment (Production, Sandbox)
@@ -87,16 +87,18 @@ public class TopController : PlatformController
         switch (output?.Status)
         {
             case null:
-                throw new AppleReceiptException(output?.Response, message: "Error validating Apple receipt.");
-            case "failed":
-                throw new AppleReceiptException(output.Response, message: "Failed to validate Apple receipt. Order does not exist.");
-            case "success":
-                Log.Info(owner: Owner.Nathan, message: $"Successful Apple receipt processed.", data: output.Response);
-
-                if (_appleService.Exists(output.TransactionId))
-                {
-                    throw new AppleReceiptException(output.Response, "Apple receipt has already been redeemed.");
-                }
+                throw new AppleReceiptException(receipt, message: "Error occurred while trying to validate Apple receipt.");
+            case AppleVerificationResult.SuccessStatus.False:
+                Log.Error(owner: Owner.Nathan, message: "Failed to validate Apple receipt. Order does not exist.");
+                break;
+            case AppleVerificationResult.SuccessStatus.DuplicatedFail:
+                Log.Error(owner: Owner.Nathan, message: "Duplicate Apple receipt processed with a different account ID.");
+                break;
+            case AppleVerificationResult.SuccessStatus.Duplicated:
+                Log.Warn(owner: Owner.Nathan, message: "Duplicate Apple receipt processed with the same account ID.", data: receipt);
+                break;
+            case AppleVerificationResult.SuccessStatus.True:
+                Log.Info(owner: Owner.Nathan, message: "Successful Apple receipt processed.", data: output.Response);
 
                 Receipt newReceipt = new Receipt();
 
@@ -137,21 +139,23 @@ public class TopController : PlatformController
         //     .Request($"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{receipt.PackageName}/purchases/products/{receipt.ProductId}/tokens/{receipt.PurchaseToken}")
         //     .OnFailure(response => Log.Local(Owner.Will, response.AsGenericData.JSON, emphasis: Log.LogType.ERROR))
         //     .Get(out GenericData json, out int code);
-        VerificationResult output = GoogleService.VerifyGoogle(receipt: receipt, signature: signature, receiptData: receiptData);
+        VerificationResult output = _googleService.VerifyGoogle(receipt: receipt, signature: signature, receiptData: receiptData, accountId: accountId);
 
         switch (output?.Status)
         {
             case null:
-                throw new ReceiptException(receipt, message: "Error validating Google receipt.");
-            case "failed":
-                throw new ReceiptException(receipt, message: "Failed to validate Google receipt. Order does not exist.");
-            case "success":
-                Log.Info(owner: Owner.Nathan, message: $"Successful Google receipt processed.", data: receipt);
-
-                if (_googleService.Find(filter: existingReceipt => existingReceipt.OrderId == output.TransactionId).FirstOrDefault() != null)
-                {
-                    throw new ReceiptException(receipt, "Google receipt has already been redeemed.");
-                }
+                throw new ReceiptException(receipt: receipt, message: "Error occurred while trying to validate Google receipt.");
+            case VerificationResult.SuccessStatus.False:
+                Log.Error(owner: Owner.Nathan, message: "Failed to validate Google receipt. Order does not exist.");
+                break;
+            case VerificationResult.SuccessStatus.DuplicatedFail:
+                Log.Error(owner: Owner.Nathan, message: "Duplicate Google receipt processed with a different account ID.");
+                break;
+            case VerificationResult.SuccessStatus.Duplicated:
+                Log.Warn(owner: Owner.Nathan, message: "Duplicate Google receipt processed with the same account ID.", data: receipt);
+                break;
+            case VerificationResult.SuccessStatus.True:
+                Log.Info(owner: Owner.Nathan, message: "Successful Google receipt processed.", data: receipt);
 
                 receipt.AccountId = accountId;
 

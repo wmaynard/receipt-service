@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using RCL.Logging;
 using Rumble.Platform.Common.Exceptions;
 using Rumble.Platform.Common.Extensions;
@@ -12,7 +13,11 @@ namespace Rumble.Platform.ReceiptService.Services;
 
 public class AppleService : VerificationService
 {
-    private readonly ApiService _apiService;
+#pragma warning disable
+    private readonly ApiService     _apiService;
+    private readonly ReceiptService _receiptService;
+    private readonly DynamicConfig  _dynamicConfig;
+#pragma warning restore
 
     public AppleService(ApiService apiService)
     {
@@ -24,7 +29,7 @@ public class AppleService : VerificationService
     // requires password
     // requires exclude-old-transactions if auto-renewable subscriptions
     // assuming no subscriptions for now, possible to put in later if needed
-    public AppleVerificationResult VerifyApple(string receipt, string transactionId)
+    public AppleVerificationResult VerifyApple(string receipt, string transactionId, string accountId)
     {
         AppleValidation verified = VerifyAppleData(receipt);
 
@@ -36,20 +41,56 @@ public class AppleService : VerificationService
                 throw new PlatformException(message:
                                             "Receipt validated correctly with Apple but no matching transaction ID was found.");
             }
-        
-            return new AppleVerificationResult
+
+            Receipt storedReceipt = _receiptService
+                                         .Find(filter: existingReceipt => existingReceipt.OrderId == transactionId)
+                                         .FirstOrDefault();
+            
+            if (storedReceipt?.AccountId == accountId)
+            {
+                return new AppleVerificationResult
                    {
-                       Status = "success",
+                       Status = AppleVerificationResult.SuccessStatus.Duplicated,
                        Response = verified.Receipt,
                        TransactionId = transactionId,
                        ReceiptKey = $"{PlatformEnvironment.Deployment}_s_iosReceipt_{transactionId}",
                        ReceiptData = verified.Receipt.JSON,
                        Timestamp = Convert.ToInt64(verified.Receipt.ReceiptCreationDateMs)
                    };
+            }
+
+            if (storedReceipt?.AccountId != accountId)
+            {
+                Log.Warn(owner: Owner.Nathan, message: "Duplicated receipt processed but account IDs did not match.", data: receipt);
+                
+                return new AppleVerificationResult
+                       {
+                           Status = AppleVerificationResult.SuccessStatus.DuplicatedFail,
+                           Response = verified.Receipt,
+                           TransactionId = transactionId,
+                           ReceiptKey = $"{PlatformEnvironment.Deployment}_s_iosReceipt_{transactionId}",
+                           ReceiptData = verified.Receipt.JSON,
+                           Timestamp = Convert.ToInt64(verified.Receipt.ReceiptCreationDateMs)
+                       };
+            }
+            
+            if (storedReceipt == null)
+            {
+                return new AppleVerificationResult
+                    {
+                        Status = AppleVerificationResult.SuccessStatus.True,
+                        Response = verified.Receipt,
+                        TransactionId = transactionId,
+                        ReceiptKey = $"{PlatformEnvironment.Deployment}_s_iosReceipt_{transactionId}",
+                        ReceiptData = verified.Receipt.JSON,
+                        Timestamp = Convert.ToInt64(verified.Receipt.ReceiptCreationDateMs)
+                    };
+            }
+
         }
         return new AppleVerificationResult
                {
-                   Status = "failed",
+                   Status = AppleVerificationResult.SuccessStatus.False,
                    Response = verified?.Receipt,
                    TransactionId = transactionId,
                    ReceiptKey = null,
@@ -64,7 +105,7 @@ public class AppleService : VerificationService
         string sharedSecret = PlatformEnvironment.Require(key: "appleSharedSecret"); // for some reason this is trying to get from request payload
         
         _apiService
-            .Request(PlatformEnvironment.Require(key: "iosVerifyReceiptUrl"))
+            .Request(_dynamicConfig.Require<string>(key: "iosVerifyReceiptUrl"))
             .SetPayload(new RumbleJson
             {
                 { "receipt-data", receipt }, // does this need Encoding.UTF8.GetBytes()?
@@ -82,7 +123,7 @@ public class AppleService : VerificationService
         {
             Log.Warn(owner: Owner.Nathan, message: "Apple receipt validation failed. Falling back to attempt validating in sandbox...");
             _apiService
-                .Request(PlatformEnvironment.Require("iosVerifyReceiptSandbox"))
+                .Request(_dynamicConfig.Require<string>("iosVerifyReceiptSandbox"))
                 .SetPayload(new RumbleJson
                             {
                                 { "receipt-data", receipt }, // does this need Encoding.UTF8.GetBytes()?

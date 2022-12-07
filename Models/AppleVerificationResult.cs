@@ -1,6 +1,5 @@
 using System.Text.Json.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
-using Rumble.Platform.Common.Models;
 using Rumble.Platform.Data;
 
 // ReSharper disable MemberCanBePrivate.Global
@@ -26,9 +25,17 @@ public class AppleVerificationResult : PlatformDataModel
     public const string FRIENDLY_KEY_RECEIPT_DATA = "receiptData";
     public const string FRIENDLY_KEY_TIMESTAMP = "timestamp";
     
+    public enum SuccessStatus
+    {
+        False,
+        True,
+        Duplicated,
+        DuplicatedFail
+    }
+    
     [BsonElement(DB_KEY_STATUS)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_STATUS)]
-    public string Status { get; set; }
+    public SuccessStatus Status { get; set; }
     
     [BsonElement(DB_KEY_RESPONSE)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_RESPONSE)]
@@ -56,7 +63,7 @@ public class AppleVerificationResult : PlatformDataModel
     
     public AppleVerificationResult(){}
 
-    public AppleVerificationResult(string status, AppleReceipt response, string transactionId, string offerId, string receiptKey, string receiptData, long timestamp)
+    public AppleVerificationResult(SuccessStatus status, AppleReceipt response, string transactionId, string offerId, string receiptKey, string receiptData, long timestamp)
     {
         Status = status;
         Response = response;
