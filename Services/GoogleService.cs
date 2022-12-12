@@ -51,44 +51,16 @@ public class GoogleService : VerificationService
             return null;
         }
 
-        VerificationResult verification = null;
-
         if (verified)
         {
             string receiptKey = $"{PlatformEnvironment.Deployment}_s_aosReceipt_{receipt.OrderId}";
             Receipt storedReceipt = _receiptService
                                     .Find(filter: existingReceipt => existingReceipt.OrderId == receipt.OrderId)
                                     .FirstOrDefault();
-            if (storedReceipt?.AccountId == accountId)
-            {
-                verification = new VerificationResult(
-                    status: VerificationResult.SuccessStatus.Duplicated,
-                    response: receipt,
-                    transactionId: receipt.OrderId,
-                    offerId: receipt.ProductId,
-                    receiptKey: receiptKey,
-                    receiptData: receipt.JSON,
-                    timestamp: receipt.PurchaseTime
-                    );
-            }
-            
-            if (storedReceipt?.AccountId != accountId)
-            {
-                Log.Warn(owner: Owner.Nathan, message: "Duplicated receipt processed but account IDs did not match.", data: receipt);
-                verification = new VerificationResult(
-                    status: VerificationResult.SuccessStatus.DuplicatedFail,
-                    response: receipt,
-                    transactionId: receipt.OrderId,
-                    offerId: receipt.ProductId,
-                    receiptKey: receiptKey,
-                    receiptData: receipt.JSON,
-                    timestamp: receipt.PurchaseTime
-                    );
-            }
             
             if (storedReceipt == null)
             {
-                verification = new VerificationResult(
+                return new VerificationResult(
                     status: VerificationResult.SuccessStatus.True,
                     response: receipt,
                     transactionId: receipt.OrderId,
@@ -96,23 +68,45 @@ public class GoogleService : VerificationService
                     receiptKey: receiptKey,
                     receiptData: receipt.JSON,
                     timestamp: receipt.PurchaseTime
-                    );
+                );
+            }
+            
+            if (storedReceipt.AccountId == accountId)
+            {
+                return new VerificationResult(
+                    status: VerificationResult.SuccessStatus.Duplicated,
+                    response: receipt,
+                    transactionId: receipt.OrderId,
+                    offerId: receipt.ProductId,
+                    receiptKey: receiptKey,
+                    receiptData: receipt.JSON,
+                    timestamp: receipt.PurchaseTime
+                );
+            }
+            
+            if (storedReceipt.AccountId != accountId)
+            {
+                Log.Warn(owner: Owner.Nathan, message: "Duplicated receipt processed but account IDs did not match.", data: receipt);
+                return new VerificationResult(
+                    status: VerificationResult.SuccessStatus.DuplicatedFail,
+                    response: receipt,
+                    transactionId: receipt.OrderId,
+                    offerId: receipt.ProductId,
+                    receiptKey: receiptKey,
+                    receiptData: receipt.JSON,
+                    timestamp: receipt.PurchaseTime
+                );
             }
         }
-        else
-        {
-            verification = new VerificationResult(
-                status: VerificationResult.SuccessStatus.False,
-                response: receipt,
-                transactionId: receipt.OrderId,
-                offerId: receipt.ProductId,
-                receiptKey: null,
-                receiptData: receipt.JSON,
-                timestamp: receipt.PurchaseTime
-            );
-            Log.Error(owner: Owner.Nathan, message: "Failure to validate Google receipt.", data: $"Receipt data: {receiptData.Json}. Signature: {signature}");
-        }
-
-        return verification;
+        Log.Error(owner: Owner.Nathan, message: "Failure to validate Google receipt.", data: $"Receipt data: {receiptData.Json}. Signature: {signature}");
+        return new VerificationResult(
+            status: VerificationResult.SuccessStatus.False,
+            response: receipt,
+            transactionId: receipt.OrderId,
+            offerId: receipt.ProductId,
+            receiptKey: null,
+            receiptData: receipt.JSON,
+            timestamp: receipt.PurchaseTime
+        );
     }
 }
