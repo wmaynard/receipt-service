@@ -46,7 +46,20 @@ public class AppleService : VerificationService
                                          .Find(filter: existingReceipt => existingReceipt.OrderId == transactionId)
                                          .FirstOrDefault();
             
-            if (storedReceipt?.AccountId == accountId)
+            if (storedReceipt == null)
+            {
+                return new AppleVerificationResult
+                       {
+                           Status = AppleVerificationResult.SuccessStatus.True,
+                           Response = verified.Receipt,
+                           TransactionId = transactionId,
+                           ReceiptKey = $"{PlatformEnvironment.Deployment}_s_iosReceipt_{transactionId}",
+                           ReceiptData = verified.Receipt.JSON,
+                           Timestamp = Convert.ToInt64(verified.Receipt.ReceiptCreationDateMs)
+                       };
+            }
+            
+            if (storedReceipt.AccountId == accountId)
             {
                 return new AppleVerificationResult
                    {
@@ -59,7 +72,7 @@ public class AppleService : VerificationService
                    };
             }
 
-            if (storedReceipt?.AccountId != accountId)
+            if (storedReceipt.AccountId != accountId)
             {
                 Log.Warn(owner: Owner.Nathan, message: "Duplicated receipt processed but account IDs did not match.", data: receipt);
                 
@@ -73,20 +86,6 @@ public class AppleService : VerificationService
                            Timestamp = Convert.ToInt64(verified.Receipt.ReceiptCreationDateMs)
                        };
             }
-            
-            if (storedReceipt == null)
-            {
-                return new AppleVerificationResult
-                    {
-                        Status = AppleVerificationResult.SuccessStatus.True,
-                        Response = verified.Receipt,
-                        TransactionId = transactionId,
-                        ReceiptKey = $"{PlatformEnvironment.Deployment}_s_iosReceipt_{transactionId}",
-                        ReceiptData = verified.Receipt.JSON,
-                        Timestamp = Convert.ToInt64(verified.Receipt.ReceiptCreationDateMs)
-                    };
-            }
-
         }
         return new AppleVerificationResult
                {
