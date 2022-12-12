@@ -51,7 +51,7 @@ public class Receipt : PlatformCollectionDocument
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_PURCHASE_STATE)]
     public int PurchaseState { get; set; }
     
-    [BsonElement(DB_KEY_PURCHASE_TOKEN)]
+    [BsonElement(DB_KEY_PURCHASE_TOKEN), BsonIgnoreIfNull]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_PURCHASE_TOKEN), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string PurchaseToken { get; set; }
     
