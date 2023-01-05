@@ -36,20 +36,26 @@ public class TopController : PlatformController
             throw new PlatformException("Incorrect game key.", code: ErrorCode.Unauthorized);
         }
 
+        bool loadTest = false;
+        
+        if (PlatformEnvironment.IsLocal || PlatformEnvironment.IsDev)
+        {
+            loadTest = Optional<bool>(key: "loadTest");
+        }
+
         switch (channel)
         {
             case "aos":
                 string signature = Optional<string>(key: "signature"); // for android
                 Receipt receipt = Require<Receipt>(key: "receipt");
                 RumbleJson receiptData = Require<RumbleJson>(key: "receipt"); // for android fallback to verify raw data
-                Log.Info(owner: Owner.Nathan, message: $"Receipt parsed from receipt data", data: $"Receipt: {receipt.JSON}");
                 
                 if (signature == null)
                 {
                     throw new ReceiptException(receipt,
                                                "Receipt called with 'aos' as the channel without a signature. 'aos' receipts require a signature");
                 }
-                VerificationResult validated = ValidateAndroid(receipt, accountId, signature, receiptData);
+                VerificationResult validated = ValidateAndroid(receipt, accountId, signature, receiptData, loadTest);
                 return Ok(new RumbleJson
                           {
                               {"success", validated.Status},
@@ -58,7 +64,7 @@ public class TopController : PlatformController
             case "ios":
                 string appleReceipt = Require<string>(key: "receipt");
                 string transactionId = Require<string>(key: "transactionId");
-                AppleVerificationResult appleValidated = ValidateApple(appleReceipt, accountId, transactionId);
+                AppleVerificationResult appleValidated = ValidateApple(appleReceipt, accountId, transactionId, loadTest);
                 return Ok(new RumbleJson
                           {
                               {"success", appleValidated.Status},
@@ -71,7 +77,7 @@ public class TopController : PlatformController
     }
 
     // Validation process for an ios receipt
-    private AppleVerificationResult ValidateApple(string receipt, string accountId, string transactionId)
+    private AppleVerificationResult ValidateApple(string receipt, string accountId, string transactionId, bool loadTest = false)
     {
         AppleVerificationResult output = _appleService.VerifyApple(receipt: receipt, transactionId: transactionId, accountId: accountId);
             
@@ -95,7 +101,32 @@ public class TopController : PlatformController
                 Log.Error(owner: Owner.Nathan, message: "Duplicate Apple receipt processed with a different account ID.");
                 break;
             case AppleVerificationResult.SuccessStatus.Duplicated:
-                Log.Warn(owner: Owner.Nathan, message: "Duplicate Apple receipt processed with the same account ID.", data: receipt);
+                if (loadTest)
+                {
+                    Receipt loadTestReceipt = new Receipt();
+
+                    loadTestReceipt.AccountId = accountId;
+                    loadTestReceipt.OrderId = output.TransactionId;
+                    loadTestReceipt.PackageName = output.Response.BundleId;
+                    loadTestReceipt.ProductId = output.Response.InApp[0].ProductId;
+                    loadTestReceipt.PurchaseTime = output.Timestamp;
+                    loadTestReceipt.PurchaseState = 0;
+                    string loadTestQuantity = output.Response.InApp.Find(inApp => inApp.TransactionId == transactionId)
+                                            ?.Quantity;
+                    if (loadTestQuantity != null)
+                    {
+                        loadTestReceipt.Quantity =
+                            Int32.Parse(loadTestQuantity);
+                    }
+
+                    loadTestReceipt.Acknowledged = false;
+
+                    _receiptService.Create(loadTestReceipt);
+                }
+                else
+                {
+                    Log.Warn(owner: Owner.Nathan, message: "Duplicate Apple receipt processed with the same account ID.", data: receipt);
+                }
                 break;
             case AppleVerificationResult.SuccessStatus.True:
                 Log.Info(owner: Owner.Nathan, message: "Successful Apple receipt processed.", data: output.Response);
@@ -126,7 +157,7 @@ public class TopController : PlatformController
     }
 
     // Validation process for an aos receipt
-    private VerificationResult ValidateAndroid(Receipt receipt, string accountId, string signature, RumbleJson receiptData)
+    private VerificationResult ValidateAndroid(Receipt receipt, string accountId, string signature, RumbleJson receiptData, bool loadTest = false)
     {
         receipt.Validate();
         
@@ -152,7 +183,16 @@ public class TopController : PlatformController
                 Log.Error(owner: Owner.Nathan, message: "Duplicate Google receipt processed with a different account ID.");
                 break;
             case VerificationResult.SuccessStatus.Duplicated:
-                Log.Warn(owner: Owner.Nathan, message: "Duplicate Google receipt processed with the same account ID.", data: receipt);
+                if (loadTest)
+                {
+                    receipt.AccountId = accountId;
+
+                    _googleService.Create(receipt);
+                }
+                else
+                {
+                    Log.Warn(owner: Owner.Nathan, message: "Duplicate Google receipt processed with the same account ID.", data: receipt);
+                }
                 break;
             case VerificationResult.SuccessStatus.True:
                 Log.Info(owner: Owner.Nathan, message: "Successful Google receipt processed.", data: receipt);
