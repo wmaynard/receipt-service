@@ -114,8 +114,8 @@ public class AppleService : VerificationService
 
         if (!code.Between(200, 299))
         {
-            Log.Error(owner: Owner.Nathan, message: $"Request to the Apple's App Store failed with code {code}.");
-            throw new PlatformException("Request to the Apple's App Store failed.");
+            Log.Error(owner: Owner.Nathan, message: "Request to Apple's App Store failed.", data:$"Code: {code}");
+            throw new PlatformException("Request to Apple's App Store failed.");
         }
 
         if (response.Status == 21007)
@@ -134,7 +134,7 @@ public class AppleService : VerificationService
             
             if (!sandboxCode.Between(200, 299))
             {
-                Log.Error(owner: Owner.Nathan, message: $"Request to the Apple's App Store sandbox failed with code {code}.");
+                Log.Error(owner: Owner.Nathan, message: "Request to the Apple's App Store sandbox failed.", data:$"Code {code}.");
                 throw new PlatformException("Request to the Apple's App Store sandbox failed.");
             }
 
