@@ -77,39 +77,52 @@ public class AppleService : VerificationService
                 Log.Warn(owner: Owner.Nathan, message: "Duplicated receipt processed but account IDs did not match.", data: receipt);
                 
                 return new AppleVerificationResult
-                       {
-                           Status = AppleVerificationResult.SuccessStatus.DuplicatedFail,
-                           Response = verified.Receipt,
-                           TransactionId = transactionId,
-                           ReceiptKey = $"{PlatformEnvironment.Deployment}_s_iosReceipt_{transactionId}",
-                           ReceiptData = verified.Receipt.JSON,
-                           Timestamp = Convert.ToInt64(verified.Receipt.ReceiptCreationDateMs)
-                       };
+                   {
+                       Status = AppleVerificationResult.SuccessStatus.DuplicatedFail,
+                       Response = verified.Receipt,
+                       TransactionId = transactionId,
+                       ReceiptKey = $"{PlatformEnvironment.Deployment}_s_iosReceipt_{transactionId}",
+                       ReceiptData = verified.Receipt.JSON,
+                       Timestamp = Convert.ToInt64(verified.Receipt.ReceiptCreationDateMs)
+                   };
             }
         }
 
         if (verified.Status == 21003)
         {
             return new AppleVerificationResult
-                   {
-                       Status = AppleVerificationResult.SuccessStatus.False,
-                       Response = verified?.Receipt,
-                       TransactionId = transactionId,
-                       ReceiptKey = null,
-                       ReceiptData = verified?.Receipt.JSON,
-                       Timestamp = Convert.ToInt64(verified?.Receipt.ReceiptCreationDateMs)
-                   };
-        }
-        
-        return new AppleVerificationResult
                {
-                   Status = AppleVerificationResult.SuccessStatus.StoreOutage,
+                   Status = AppleVerificationResult.SuccessStatus.False,
                    Response = verified?.Receipt,
                    TransactionId = transactionId,
                    ReceiptKey = null,
-                   ReceiptData = verified?.Receipt?.JSON,
-                   Timestamp = Convert.ToInt64(verified?.Receipt?.ReceiptCreationDateMs)
+                   ReceiptData = verified?.Receipt.JSON,
+                   Timestamp = Convert.ToInt64(verified?.Receipt.ReceiptCreationDateMs)
                };
+        }
+
+        if (verified.Status == 500)
+        {
+            return new AppleVerificationResult
+               {
+                   Status = AppleVerificationResult.SuccessStatus.StoreOutage,
+                   Response = null,
+                   TransactionId = transactionId,
+                   ReceiptKey = null,
+                   ReceiptData = null,
+                   Timestamp = 0
+               };
+        }
+        
+        return new AppleVerificationResult
+           {
+               Status = AppleVerificationResult.SuccessStatus.StoreOutage,
+               Response = verified?.Receipt,
+               TransactionId = transactionId,
+               ReceiptKey = null,
+               ReceiptData = verified?.Receipt?.JSON,
+               Timestamp = Convert.ToInt64(verified?.Receipt?.ReceiptCreationDateMs)
+           };
     }
 
     // Sends the request to attempt to verify receipt data
@@ -128,8 +141,12 @@ public class AppleService : VerificationService
 
         if (!code.Between(200, 299))
         {
-            Log.Error(owner: Owner.Nathan, message: "Request to Apple's App Store failed.", data:$"Code: {code}");
-            throw new PlatformException("Request to Apple's App Store failed.");
+            Log.Error(owner: Owner.Nathan, message: "Request to Apple's App Store failed. App store is down.", data:$"Code: {code}");
+
+            AppleValidation failedResponse = new AppleValidation();
+            failedResponse.Status = 500;
+            
+            return failedResponse;
         }
 
         if (response.Status == 21007)
@@ -148,8 +165,11 @@ public class AppleService : VerificationService
             
             if (!sandboxCode.Between(200, 299))
             {
-                Log.Error(owner: Owner.Nathan, message: "Request to the Apple's App Store sandbox failed.", data: $"Code: {code}.");
-                throw new PlatformException("Request to the Apple's App Store sandbox failed.");
+                Log.Error(owner: Owner.Nathan, message: "Request to the Apple's App Store sandbox failed. App store is down.", data: $"Code: {code}.");
+                AppleValidation failedResponse = new AppleValidation();
+                failedResponse.Status = 500;
+                
+                return failedResponse;
             }
 
             if (sandboxResponse.Status != 0)
