@@ -141,7 +141,7 @@ public class AppleService : VerificationService
 
         if (!code.Between(200, 299))
         {
-            Log.Error(owner: Owner.Nathan, message: "Request to Apple's App Store failed. App store is down.", data:$"Code: {code}");
+            Log.Error(owner: Owner.Nathan, message: "Request to Apple's App Store failed. Apple's App store is down.", data:$"Code: {code}");
 
             AppleValidation failedResponse = new AppleValidation();
             failedResponse.Status = 500;
@@ -165,7 +165,7 @@ public class AppleService : VerificationService
             
             if (!sandboxCode.Between(200, 299))
             {
-                Log.Error(owner: Owner.Nathan, message: "Request to the Apple's App Store sandbox failed. App store is down.", data: $"Code: {code}.");
+                Log.Error(owner: Owner.Nathan, message: "Request to the Apple's App Store sandbox failed. Apple's App store is down.", data: $"Code: {code}.");
                 AppleValidation failedResponse = new AppleValidation();
                 failedResponse.Status = 500;
                 
@@ -174,7 +174,7 @@ public class AppleService : VerificationService
 
             if (sandboxResponse.Status != 0)
             {
-                Log.Error(owner: Owner.Nathan, message: "Failed to validate iOS receipt in sandbox. Apple's App store may be down.", data: $"Status: {sandboxResponse.Status}");
+                Log.Error(owner: Owner.Nathan, message: "Failed to validate iOS receipt in sandbox. Apple's App store may have an outage.", data: $"Status: {sandboxResponse.Status}");
             }
 
             return sandboxResponse;
@@ -182,8 +182,7 @@ public class AppleService : VerificationService
 
         if (response.Status != 0)
         {
-            Log.Error(owner: Owner.Nathan, message: "Failed to validate iOS receipt.");
-            throw new PlatformException("Failed to validate iOS receipt.");
+            Log.Error(owner: Owner.Nathan, message: "Failed to validate iOS receipt. Apple's App store may have an outage.", data: $"Status: {response.Status}");
         }
 
         return response;
