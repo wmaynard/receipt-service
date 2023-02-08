@@ -87,14 +87,28 @@ public class AppleService : VerificationService
                        };
             }
         }
+
+        if (verified.Status == 21003)
+        {
+            return new AppleVerificationResult
+                   {
+                       Status = AppleVerificationResult.SuccessStatus.False,
+                       Response = verified?.Receipt,
+                       TransactionId = transactionId,
+                       ReceiptKey = null,
+                       ReceiptData = verified?.Receipt.JSON,
+                       Timestamp = Convert.ToInt64(verified?.Receipt.ReceiptCreationDateMs)
+                   };
+        }
+        
         return new AppleVerificationResult
                {
-                   Status = AppleVerificationResult.SuccessStatus.False,
+                   Status = AppleVerificationResult.SuccessStatus.StoreOutage,
                    Response = verified?.Receipt,
                    TransactionId = transactionId,
                    ReceiptKey = null,
-                   ReceiptData = verified?.Receipt.JSON,
-                   Timestamp = Convert.ToInt64(verified?.Receipt.ReceiptCreationDateMs)
+                   ReceiptData = verified?.Receipt?.JSON,
+                   Timestamp = Convert.ToInt64(verified?.Receipt?.ReceiptCreationDateMs)
                };
     }
 
@@ -134,14 +148,13 @@ public class AppleService : VerificationService
             
             if (!sandboxCode.Between(200, 299))
             {
-                Log.Error(owner: Owner.Nathan, message: "Request to the Apple's App Store sandbox failed.", data:$"Code {code}.");
+                Log.Error(owner: Owner.Nathan, message: "Request to the Apple's App Store sandbox failed.", data: $"Code: {code}.");
                 throw new PlatformException("Request to the Apple's App Store sandbox failed.");
             }
 
             if (sandboxResponse.Status != 0)
             {
-                Log.Error(owner: Owner.Nathan, message: "Failed to validate iOS receipt in sandbox.");
-                throw new PlatformException("Failed to validate iOS receipt in sandbox.");
+                Log.Error(owner: Owner.Nathan, message: "Failed to validate iOS receipt in sandbox. Apple's App store may be down.", data: $"Status: {sandboxResponse.Status}");
             }
 
             return sandboxResponse;

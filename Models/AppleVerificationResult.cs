@@ -30,7 +30,8 @@ public class AppleVerificationResult : PlatformDataModel
         False,
         True,
         Duplicated,
-        DuplicatedFail
+        DuplicatedFail,
+        StoreOutage
     }
     
     [BsonElement(DB_KEY_STATUS)]
