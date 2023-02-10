@@ -97,16 +97,16 @@ public class AppleService : VerificationService
             }
         }
 
-        if (verified.Status == 21003 || verified.Status == 21007) // failed to authenticate or testflight on prod
+        if (verified.Status == 21003 || verified.Status == 21007) // failed to authenticate or testflight on prod. Apple returns nothing but the status
         {
             return new AppleVerificationResult
                {
                    Status = AppleVerificationResult.SuccessStatus.False,
-                   Response = verified?.Receipt,
+                   Response = null,
                    TransactionId = transactionId,
                    ReceiptKey = null,
-                   ReceiptData = verified?.Receipt.JSON,
-                   Timestamp = Convert.ToInt64(verified?.Receipt.ReceiptCreationDateMs)
+                   ReceiptData = null,
+                   Timestamp = 0
                };
         }
 
