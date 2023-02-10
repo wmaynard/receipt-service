@@ -149,9 +149,9 @@ public class AppleService : VerificationService
             return failedResponse;
         }
 
-        bool isProd = _dynamicConfig.Require<bool>(key: "isProd");
+        string isProd = _dynamicConfig.Require<string>(key: "isProd"); // doesn't seem like dc has booleans
 
-        if (response.Status == 21007 && !PlatformEnvironment.IsProd && !isProd)
+        if (response.Status == 21007 && !PlatformEnvironment.IsProd && isProd != "true")
         {
             Log.Warn(owner: Owner.Nathan, message: "Apple receipt validation failed. Falling back to attempt validating in sandbox...", data: $"Account ID: {accountId}.");
             _apiService
