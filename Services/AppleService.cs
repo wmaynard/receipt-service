@@ -38,8 +38,17 @@ public class AppleService : VerificationService
             AppleInApp inApp = verified.Receipt.InApp.Find(appleInApp => appleInApp.TransactionId == transactionId);
             if (inApp == null)
             {
-                throw new PlatformException(message:
-                                            "Receipt validated correctly with Apple but no matching transaction ID was found.");
+                Log.Error(owner: Owner.Nathan, message: "Receipt validated correctly with Apple but no matching transaction ID was found.", data: $"Account ID: {accountId}. Request transaction ID: {transactionId}. Receipt: {receipt}.");
+                
+                return new AppleVerificationResult
+                       {
+                           Status = AppleVerificationResult.SuccessStatus.False,
+                           Response = verified?.Receipt,
+                           TransactionId = transactionId,
+                           ReceiptKey = null,
+                           ReceiptData = verified?.Receipt.JSON,
+                           Timestamp = Convert.ToInt64(verified?.Receipt.ReceiptCreationDateMs)
+                       };
             }
 
             Receipt storedReceipt = _receiptService
