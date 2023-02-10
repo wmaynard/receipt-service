@@ -149,7 +149,7 @@ public class AppleService : VerificationService
             return failedResponse;
         }
 
-        if (response.Status == 21007)
+        if (response.Status == 21007 && !PlatformEnvironment.IsProd)
         {
             Log.Warn(owner: Owner.Nathan, message: "Apple receipt validation failed. Falling back to attempt validating in sandbox...", data: $"Account ID: {accountId}.");
             _apiService
