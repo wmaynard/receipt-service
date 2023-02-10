@@ -53,11 +53,11 @@ public class AppleReceipt : Receipt
 	
 	[BsonElement(DB_KEY_ADAM_ID)]
 	[JsonInclude, JsonPropertyName(FRIENDLY_KEY_ADAM_ID)]
-	public int AdamId { get; set; }
+	public long AdamId { get; set; }
 	
 	[BsonElement(DB_KEY_APP_ITEM_ID)]
 	[JsonInclude, JsonPropertyName(FRIENDLY_KEY_APP_ITEM_ID)]
-	public int AppItemId { get; set; }
+	public long AppItemId { get; set; }
 
 	[BsonElement(DB_KEY_BUNDLE_ID)]
 	[JsonInclude, JsonPropertyName(FRIENDLY_KEY_BUNDLE_ID)]
@@ -73,7 +73,7 @@ public class AppleReceipt : Receipt
 	
 	[BsonElement(DB_KEY_VERSION_EXTERNAL_IDENTIFIER)]
 	[JsonInclude, JsonPropertyName(FRIENDLY_KEY_VERSION_EXTERNAL_IDENTIFIER)]
-	public int VersionExternalIdentifier { get; set; }
+	public long VersionExternalIdentifier { get; set; }
 	
 	[BsonElement(DB_KEY_RECEIPT_CREATION_DATE)]
 	[JsonInclude, JsonPropertyName(FRIENDLY_KEY_RECEIPT_CREATION_DATE)]
