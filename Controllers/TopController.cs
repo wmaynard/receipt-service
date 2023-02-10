@@ -68,7 +68,7 @@ public class TopController : PlatformController
                 return Ok(new RumbleJson
                           {
                               {"success", appleValidated.Status},
-                              {"receipt", appleValidated.Response.InApp.Find(inApp => inApp.TransactionId == transactionId)}
+                              {"receipt", appleValidated.Response?.InApp.Find(inApp => inApp.TransactionId == transactionId)}
                           });
             default:
                 throw
