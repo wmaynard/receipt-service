@@ -69,7 +69,7 @@ public class AppleReceipt : Receipt
 	
 	[BsonElement(DB_KEY_DOWNLOAD_ID)]
 	[JsonInclude, JsonPropertyName(FRIENDLY_KEY_DOWNLOAD_ID)]
-	public int DownloadId { get; set; }
+	public long DownloadId { get; set; }
 	
 	[BsonElement(DB_KEY_VERSION_EXTERNAL_IDENTIFIER)]
 	[JsonInclude, JsonPropertyName(FRIENDLY_KEY_VERSION_EXTERNAL_IDENTIFIER)]

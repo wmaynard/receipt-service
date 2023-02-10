@@ -31,7 +31,7 @@ public class AppleService : VerificationService
     // assuming no subscriptions for now, possible to put in later if needed
     public AppleVerificationResult VerifyApple(string receipt, string transactionId, string accountId)
     {
-        AppleValidation verified = VerifyAppleData(receipt);
+        AppleValidation verified = VerifyAppleData(receipt, accountId);
 
         if (verified.Status == 0)
         {
@@ -74,7 +74,7 @@ public class AppleService : VerificationService
 
             if (storedReceipt.AccountId != accountId)
             {
-                Log.Warn(owner: Owner.Nathan, message: "Duplicated receipt processed but account IDs did not match.", data: receipt);
+                Log.Warn(owner: Owner.Nathan, message: "Duplicated receipt processed but account IDs did not match.", data: $"Account ID: {accountId}. Receipt: {receipt}");
                 
                 return new AppleVerificationResult
                    {
@@ -126,7 +126,7 @@ public class AppleService : VerificationService
     }
 
     // Sends the request to attempt to verify receipt data
-    public AppleValidation VerifyAppleData(string receipt) // apple takes stringified version of receipt, includes receipt-data, password
+    public AppleValidation VerifyAppleData(string receipt, string accountId) // apple takes stringified version of receipt, includes receipt-data, password
     {
         string sharedSecret = PlatformEnvironment.Require(key: "appleSharedSecret"); // for some reason this is trying to get from request payload
         
@@ -141,7 +141,7 @@ public class AppleService : VerificationService
 
         if (!code.Between(200, 299))
         {
-            Log.Error(owner: Owner.Nathan, message: "Request to Apple's App Store failed. Apple's App store is down.", data:$"Code: {code}");
+            Log.Error(owner: Owner.Nathan, message: "Request to Apple's App Store failed. Apple's App store is down.", data:$"Account ID: {accountId}. Code: {code}");
 
             AppleValidation failedResponse = new AppleValidation();
             failedResponse.Status = 500;
@@ -151,7 +151,7 @@ public class AppleService : VerificationService
 
         if (response.Status == 21007)
         {
-            Log.Warn(owner: Owner.Nathan, message: "Apple receipt validation failed. Falling back to attempt validating in sandbox...");
+            Log.Warn(owner: Owner.Nathan, message: "Apple receipt validation failed. Falling back to attempt validating in sandbox...", data: $"Account ID: {accountId}.");
             _apiService
                 .Request(_dynamicConfig.Require<string>("iosVerifyReceiptSandbox"))
                 .SetPayload(new RumbleJson
@@ -165,7 +165,7 @@ public class AppleService : VerificationService
             
             if (!sandboxCode.Between(200, 299))
             {
-                Log.Error(owner: Owner.Nathan, message: "Request to the Apple's App Store sandbox failed. Apple's App store is down.", data: $"Code: {code}.");
+                Log.Error(owner: Owner.Nathan, message: "Request to the Apple's App Store sandbox failed. Apple's App store is down.", data: $"Account ID: {accountId}. Code: {code}.");
                 AppleValidation failedResponse = new AppleValidation();
                 failedResponse.Status = 500;
                 
@@ -174,7 +174,7 @@ public class AppleService : VerificationService
 
             if (sandboxResponse.Status != 0)
             {
-                Log.Error(owner: Owner.Nathan, message: "Failed to validate iOS receipt in sandbox. Apple's App store may have an outage.", data: $"Status: {sandboxResponse.Status}");
+                Log.Error(owner: Owner.Nathan, message: "Failed to validate iOS receipt in sandbox. Apple's App store may have an outage.", data: $"Account ID: {accountId}. Status: {sandboxResponse.Status}");
             }
 
             return sandboxResponse;
@@ -182,7 +182,7 @@ public class AppleService : VerificationService
 
         if (response.Status != 0)
         {
-            Log.Error(owner: Owner.Nathan, message: "Failed to validate iOS receipt. Apple's App store may have an outage.", data: $"Status: {response.Status}");
+            Log.Error(owner: Owner.Nathan, message: "Failed to validate iOS receipt. Apple's App store may have an outage.", data: $"Account ID: {accountId}. Status: {response.Status}");
         }
 
         return response;

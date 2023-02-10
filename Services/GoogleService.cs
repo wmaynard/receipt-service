@@ -34,20 +34,20 @@ public class GoogleService : VerificationService
             if (verified == false)
             {
                 Log.Warn(owner: Owner.Nathan,
-                         message: "Verifying Google receipt failed. Falling back to verifying raw data...");
+                         message: "Verifying Google receipt failed. Falling back to verifying raw data...", data: $"Account ID: {accountId}");
                 verified = signatureVerify.Verify(receiptData.Json, signature);
                 if (verified)
                 {
                     Log.Warn(owner: Owner.Nathan,
                              message:
-                             "Verifying Google receipt failed using the Receipt model, but succeeded when falling back to raw data. Google's receipt data may have changed.");
+                             "Verifying Google receipt failed using the Receipt model, but succeeded when falling back to raw data. Google's receipt data may have changed.", data: $"Account ID: {accountId}");
                 }
             }
         }
         catch (Exception e)
         {
             Log.Error(owner: Owner.Nathan, message: "Error occured while attempting to verify Google receipt.",
-                      data: $"{e.Message}. Receipt data: {receiptData.Json}");
+                      data:$"Account ID: {accountId}. Exception: {e.Message}. Receipt data: {receiptData.Json}");
             return null;
         }
 
@@ -86,7 +86,7 @@ public class GoogleService : VerificationService
             
             if (storedReceipt.AccountId != accountId)
             {
-                Log.Warn(owner: Owner.Nathan, message: "Duplicated receipt processed but account IDs did not match.", data: receipt);
+                Log.Warn(owner: Owner.Nathan, message: "Duplicated receipt processed but account IDs did not match.", data: $"Request account ID: {accountId}. Receipt: {receipt}");
                 return new VerificationResult(
                     status: VerificationResult.SuccessStatus.DuplicatedFail,
                     response: receipt,
@@ -98,7 +98,7 @@ public class GoogleService : VerificationService
                 );
             }
         }
-        Log.Error(owner: Owner.Nathan, message: "Failure to validate Google receipt.", data: $"Receipt data: {receiptData.Json}. Signature: {signature}");
+        Log.Error(owner: Owner.Nathan, message: "Failure to validate Google receipt.", data: $"Account ID: {accountId}. Receipt data: {receiptData.Json}. Signature: {signature}");
         return new VerificationResult(
             status: VerificationResult.SuccessStatus.False,
             response: receipt,

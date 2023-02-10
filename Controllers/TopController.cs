@@ -95,10 +95,10 @@ public class TopController : PlatformController
             case null:
                 throw new AppleReceiptException(receipt, message: "Error occurred while trying to validate Apple receipt.");
             case AppleVerificationResult.SuccessStatus.False:
-                Log.Error(owner: Owner.Nathan, message: "Failed to validate Apple receipt. Order does not exist.");
+                Log.Error(owner: Owner.Nathan, message: "Failed to validate Apple receipt. Order does not exist.", data: $"Account ID: {accountId}");
                 break;
             case AppleVerificationResult.SuccessStatus.DuplicatedFail:
-                Log.Error(owner: Owner.Nathan, message: "Duplicate Apple receipt processed with a different account ID.");
+                Log.Error(owner: Owner.Nathan, message: "Duplicate Apple receipt processed with a different account ID.", data: $"Account ID: {accountId}");
                 break;
             case AppleVerificationResult.SuccessStatus.Duplicated:
                 if (loadTest)
@@ -125,11 +125,11 @@ public class TopController : PlatformController
                 }
                 else
                 {
-                    Log.Warn(owner: Owner.Nathan, message: "Duplicate Apple receipt processed with the same account ID.", data: receipt);
+                    Log.Warn(owner: Owner.Nathan, message: "Duplicate Apple receipt processed with the same account ID.", data: $"Request account ID: {accountId}. Receipt: {receipt}.");
                 }
                 break;
             case AppleVerificationResult.SuccessStatus.True:
-                Log.Info(owner: Owner.Nathan, message: "Successful Apple receipt processed.", data: output.Response);
+                Log.Info(owner: Owner.Nathan, message: "Successful Apple receipt processed.", data: $"Account ID: {accountId}. Receipt: {output.Response}");
 
                 Receipt newReceipt = new Receipt();
 
@@ -177,10 +177,10 @@ public class TopController : PlatformController
             case null:
                 throw new ReceiptException(receipt: receipt, message: "Error occurred while trying to validate Google receipt.");
             case VerificationResult.SuccessStatus.False:
-                Log.Error(owner: Owner.Nathan, message: "Failed to validate Google receipt. Order does not exist.");
+                Log.Error(owner: Owner.Nathan, message: "Failed to validate Google receipt. Order does not exist.", data: $"Account ID: {accountId}");
                 break;
             case VerificationResult.SuccessStatus.DuplicatedFail:
-                Log.Error(owner: Owner.Nathan, message: "Duplicate Google receipt processed with a different account ID.");
+                Log.Error(owner: Owner.Nathan, message: "Duplicate Google receipt processed with a different account ID.", data: $"Account ID: {accountId}");
                 break;
             case VerificationResult.SuccessStatus.Duplicated:
                 if (loadTest)
@@ -191,11 +191,11 @@ public class TopController : PlatformController
                 }
                 else
                 {
-                    Log.Warn(owner: Owner.Nathan, message: "Duplicate Google receipt processed with the same account ID.", data: receipt);
+                    Log.Warn(owner: Owner.Nathan, message: "Duplicate Google receipt processed with the same account ID.", data: $"Request account ID: {accountId}. Receipt: {receipt}.");
                 }
                 break;
             case VerificationResult.SuccessStatus.True:
-                Log.Info(owner: Owner.Nathan, message: "Successful Google receipt processed.", data: receipt);
+                Log.Info(owner: Owner.Nathan, message: "Successful Google receipt processed.", data: $"Request account ID: {accountId}. Receipt: {receipt}.");
 
                 receipt.AccountId = accountId;
 
