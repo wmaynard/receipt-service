@@ -126,11 +126,11 @@ public class AppleService : VerificationService
         return new AppleVerificationResult
            {
                Status = AppleVerificationResult.SuccessStatus.StoreOutage,
-               Response = verified?.Receipt,
+               Response = null,
                TransactionId = transactionId,
                ReceiptKey = null,
-               ReceiptData = verified?.Receipt?.JSON,
-               Timestamp = Convert.ToInt64(verified?.Receipt?.ReceiptCreationDateMs)
+               ReceiptData = null,
+               Timestamp = 0
            };
     }
 
