@@ -88,7 +88,7 @@ public class AppleService : VerificationService
             }
         }
 
-        if (verified.Status == 21003)
+        if (verified.Status == 21003 || verified.Status == 21007) // failed to authenticate or testflight on prod
         {
             return new AppleVerificationResult
                {
@@ -131,7 +131,7 @@ public class AppleService : VerificationService
         string sharedSecret = PlatformEnvironment.Require(key: "appleSharedSecret"); // for some reason this is trying to get from request payload
 
         AppleValidation response;
-        int code = 0;
+        int code;
         try
         {
             _apiService
@@ -170,7 +170,7 @@ public class AppleService : VerificationService
             Log.Warn(owner: Owner.Nathan, message: "Apple receipt validation failed. Falling back to attempt validating in sandbox...", data: $"Account ID: {accountId}.");
             
             RumbleJson sbResponse;
-            int sandboxCode = 0;
+            int sandboxCode;
             
             try
             {
@@ -197,7 +197,7 @@ public class AppleService : VerificationService
             
             if (!sandboxCode.Between(200, 299))
             {
-                Log.Error(owner: Owner.Nathan, message: "Request to the Apple's App Store sandbox failed. Apple's App store is down.", data: $"Account ID: {accountId}. Code: {code}.");
+                Log.Error(owner: Owner.Nathan, message: "Request to the Apple's App Store sandbox failed. Apple's App store is down.", data: $"Account ID: {accountId}. Code: {sandboxCode}.");
                 AppleValidation failedResponse = new AppleValidation();
                 failedResponse.Status = 500;
                 
@@ -210,6 +210,11 @@ public class AppleService : VerificationService
             }
 
             return sandboxResponse;
+        }
+
+        if (response.Status == 21007 && (PlatformEnvironment.IsProd || isProd == "true"))
+        {
+            Log.Warn(owner: Owner.Nathan, message: "A testflight purchase was attempted on the production environment. This receipt validation is thus blocked.", data: $"Account ID: {accountId}.");
         }
 
         if (response.Status != 0)
