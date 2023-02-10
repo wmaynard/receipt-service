@@ -129,19 +129,33 @@ public class AppleService : VerificationService
     public AppleValidation VerifyAppleData(string receipt, string accountId) // apple takes stringified version of receipt, includes receipt-data, password
     {
         string sharedSecret = PlatformEnvironment.Require(key: "appleSharedSecret"); // for some reason this is trying to get from request payload
-        
-        _apiService
-            .Request(_dynamicConfig.Require<string>(key: "iosVerifyReceiptUrl"))
-            .SetPayload(new RumbleJson
-            {
-                { "receipt-data", receipt }, // does this need Encoding.UTF8.GetBytes()?
-                { "password", sharedSecret }
-            })
-            .Post(out AppleValidation response, out int code);
+
+        AppleValidation response;
+        int code = 0;
+        try
+        {
+            _apiService
+                .Request(_dynamicConfig.Require<string>(key: "iosVerifyReceiptUrl"))
+                .SetPayload(new RumbleJson
+                            {
+                                { "receipt-data", receipt }, // does this need Encoding.UTF8.GetBytes()?
+                                { "password", sharedSecret }
+                            })
+                .Post(out response, out code);
+        }
+        catch (Exception e)
+        {
+            Log.Error(owner: Owner.Nathan, message: "An exception was encountered when sending a request to Apple's App store.", data: $"Account ID: {accountId}. Exception: {e}");
+            
+            AppleValidation failedResponse = new AppleValidation();
+            failedResponse.Status = 500;
+            
+            return failedResponse;
+        }
 
         if (!code.Between(200, 299))
         {
-            Log.Error(owner: Owner.Nathan, message: "Request to Apple's App Store failed. Apple's App store is down.", data:$"Account ID: {accountId}. Code: {code}");
+            Log.Error(owner: Owner.Nathan, message: "Request to Apple's App store failed. Apple's App store is down.", data:$"Account ID: {accountId}. Code: {code}");
 
             AppleValidation failedResponse = new AppleValidation();
             failedResponse.Status = 500;
@@ -154,14 +168,30 @@ public class AppleService : VerificationService
         if (response.Status == 21007 && !PlatformEnvironment.IsProd && isProd != "true")
         {
             Log.Warn(owner: Owner.Nathan, message: "Apple receipt validation failed. Falling back to attempt validating in sandbox...", data: $"Account ID: {accountId}.");
-            _apiService
-                .Request(_dynamicConfig.Require<string>("iosVerifyReceiptSandbox"))
-                .SetPayload(new RumbleJson
-                            {
-                                { "receipt-data", receipt }, // does this need Encoding.UTF8.GetBytes()?
-                                { "password", sharedSecret }
-                            })
-                .Post(out RumbleJson sbResponse, out int sandboxCode);
+            
+            RumbleJson sbResponse;
+            int sandboxCode = 0;
+            
+            try
+            {
+                _apiService
+                    .Request(_dynamicConfig.Require<string>("iosVerifyReceiptSandbox"))
+                    .SetPayload(new RumbleJson
+                                {
+                                    { "receipt-data", receipt }, // does this need Encoding.UTF8.GetBytes()?
+                                    { "password", sharedSecret }
+                                })
+                    .Post(out sbResponse, out sandboxCode);
+            }
+            catch (Exception e)
+            {
+                Log.Error(owner: Owner.Nathan, message: "An exception was encountered when sending a request to Apple's App store sandbox.", data: $"Account ID: {accountId}. Exception: {e}");
+            
+                AppleValidation failedResponse = new AppleValidation();
+                failedResponse.Status = 500;
+            
+                return failedResponse;
+            }
 
             AppleValidation sandboxResponse = sbResponse.ToModel<AppleValidation>();
             
