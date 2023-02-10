@@ -149,7 +149,9 @@ public class AppleService : VerificationService
             return failedResponse;
         }
 
-        if (response.Status == 21007 && !PlatformEnvironment.IsProd)
+        bool isProd = _dynamicConfig.Require<bool>(key: "isProd");
+
+        if (response.Status == 21007 && !PlatformEnvironment.IsProd && !isProd)
         {
             Log.Warn(owner: Owner.Nathan, message: "Apple receipt validation failed. Falling back to attempt validating in sandbox...", data: $"Account ID: {accountId}.");
             _apiService
