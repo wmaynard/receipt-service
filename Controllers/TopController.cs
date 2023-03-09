@@ -21,6 +21,7 @@ public class TopController : PlatformController
     private readonly AppleService            _appleService;
     private readonly Services.ReceiptService _receiptService;
     private readonly GoogleService           _googleService;
+    private readonly ForcedValidationService _forcedValidationService;
 #pragma warning restore
 
     // Attempts to verify a provided receipt
@@ -43,8 +44,6 @@ public class TopController : PlatformController
             loadTest = Optional<bool>(key: "loadTest");
         }
 
-        bool forceValidation = Optional<bool>(key: "forceValidation");
-
         switch (channel)
         {
             case "aos":
@@ -57,7 +56,7 @@ public class TopController : PlatformController
                     throw new ReceiptException(receipt,
                                                "Receipt called with 'aos' as the channel without a signature. 'aos' receipts require a signature");
                 }
-                VerificationResult validated = ValidateAndroid(receipt, accountId, signature, receiptData, loadTest, forceValidation);
+                VerificationResult validated = ValidateAndroid(receipt, accountId, signature, receiptData, loadTest);
                 return Ok(new RumbleJson
                           {
                               {"success", validated.Status},
@@ -66,7 +65,7 @@ public class TopController : PlatformController
             case "ios":
                 string appleReceipt = Require<string>(key: "receipt");
                 string transactionId = Require<string>(key: "transactionId");
-                AppleVerificationResult appleValidated = ValidateApple(appleReceipt, accountId, transactionId, loadTest, forceValidation);
+                AppleVerificationResult appleValidated = ValidateApple(appleReceipt, accountId, transactionId, loadTest);
                 return Ok(new RumbleJson
                           {
                               {"success", appleValidated.Status},
@@ -79,9 +78,9 @@ public class TopController : PlatformController
     }
 
     // Validation process for an ios receipt
-    private AppleVerificationResult ValidateApple(string receipt, string accountId, string transactionId, bool loadTest = false, bool forceValidation = false)
+    private AppleVerificationResult ValidateApple(string receipt, string accountId, string transactionId, bool loadTest = false)
     {
-        AppleVerificationResult output = _appleService.VerifyApple(receipt: receipt, transactionId: transactionId, accountId: accountId, forceValidation: forceValidation);
+        AppleVerificationResult output = _appleService.VerifyApple(receipt: receipt, transactionId: transactionId, accountId: accountId);
             
         // response from apple
         // string environment (Production, Sandbox)
@@ -159,7 +158,7 @@ public class TopController : PlatformController
     }
 
     // Validation process for an aos receipt
-    private VerificationResult ValidateAndroid(Receipt receipt, string accountId, string signature, RumbleJson receiptData, bool loadTest = false, bool forceValidation = false)
+    private VerificationResult ValidateAndroid(Receipt receipt, string accountId, string signature, RumbleJson receiptData, bool loadTest = false)
     {
         receipt.Validate();
         
@@ -172,7 +171,7 @@ public class TopController : PlatformController
         //     .Request($"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{receipt.PackageName}/purchases/products/{receipt.ProductId}/tokens/{receipt.PurchaseToken}")
         //     .OnFailure(response => Log.Local(Owner.Will, response.AsGenericData.JSON, emphasis: Log.LogType.ERROR))
         //     .Get(out GenericData json, out int code);
-        VerificationResult output = _googleService.VerifyGoogle(receipt: receipt, signature: signature, receiptData: receiptData, accountId: accountId, forceValidation: forceValidation);
+        VerificationResult output = _googleService.VerifyGoogle(receipt: receipt, signature: signature, receiptData: receiptData, accountId: accountId);
 
         switch (output?.Status)
         {

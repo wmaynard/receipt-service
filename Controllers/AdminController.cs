@@ -17,6 +17,7 @@ public class AdminController : PlatformController
 #pragma warning disable
     private readonly Services.ReceiptService _receiptService; // linter says Services. is needed?
     private readonly RedisService            _redisService;   // to be removed when no longer needed
+    private readonly ForcedValidationService _forcedValidationService;
 #pragma warning restore
     
     // Retrieves all entries in redis and moves them over to Mongo
@@ -53,5 +54,18 @@ public class AdminController : PlatformController
         List<Receipt> receipts = _receiptService.GetByAccount(accountId);
 
         return Ok(new { Receipts = receipts});
+    }
+    
+    // Adds a transactionId to force validation
+    [HttpPost, Route(template: "forceValidate")]
+    public ActionResult ForceValidate()
+    {
+        string transactionId = Require<string>(key: "transactionId");
+
+        ForcedValidation forcedValidation = new ForcedValidation(transactionId);
+
+        _forcedValidationService.Create(forcedValidation);
+
+        return Ok(message: "New transactionId added to forced transaction watchlist.");
     }
 }

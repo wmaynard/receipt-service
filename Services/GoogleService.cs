@@ -12,12 +12,15 @@ namespace Rumble.Platform.ReceiptService.Services;
 public class GoogleService : VerificationService
 {
 #pragma warning disable
-    private readonly ReceiptService _receiptService;
+    private readonly ReceiptService          _receiptService;
+    private readonly ForcedValidationService _forcedValidationService;
 #pragma warning restore
 
     // Attempts to verify an aos receipt
-    public VerificationResult VerifyGoogle(Receipt receipt, string signature, RumbleJson receiptData, string accountId, bool forceValidation)
+    public VerificationResult VerifyGoogle(Receipt receipt, string signature, RumbleJson receiptData, string accountId)
     {
+        bool forceValidation = _forcedValidationService.CheckTransactionId(receipt.OrderId);
+        
         if (forceValidation)
         {
             string receiptKey = $"{PlatformEnvironment.Deployment}_s_aosReceipt_{receipt.OrderId}";

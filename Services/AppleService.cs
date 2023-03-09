@@ -14,9 +14,10 @@ namespace Rumble.Platform.ReceiptService.Services;
 public class AppleService : VerificationService
 {
 #pragma warning disable
-    private readonly ApiService     _apiService;
-    private readonly ReceiptService _receiptService;
-    private readonly DynamicConfig  _dynamicConfig;
+    private readonly ApiService              _apiService;
+    private readonly ReceiptService          _receiptService;
+    private readonly DynamicConfig           _dynamicConfig;
+    private readonly ForcedValidationService _forcedValidationService;
 #pragma warning restore
 
     public AppleService(ApiService apiService)
@@ -29,9 +30,11 @@ public class AppleService : VerificationService
     // requires password
     // requires exclude-old-transactions if auto-renewable subscriptions
     // assuming no subscriptions for now, possible to put in later if needed
-    public AppleVerificationResult VerifyApple(string receipt, string transactionId, string accountId, bool forceValidation)
+    public AppleVerificationResult VerifyApple(string receipt, string transactionId, string accountId)
     {
         AppleValidation verified = VerifyAppleData(receipt, accountId);
+
+        bool forceValidation = _forcedValidationService.CheckTransactionId(transactionId);
         
         if (forceValidation)
         {
