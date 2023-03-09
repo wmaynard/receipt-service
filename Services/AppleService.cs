@@ -29,9 +29,38 @@ public class AppleService : VerificationService
     // requires password
     // requires exclude-old-transactions if auto-renewable subscriptions
     // assuming no subscriptions for now, possible to put in later if needed
-    public AppleVerificationResult VerifyApple(string receipt, string transactionId, string accountId)
+    public AppleVerificationResult VerifyApple(string receipt, string transactionId, string accountId, bool forceValidation)
     {
         AppleValidation verified = VerifyAppleData(receipt, accountId);
+        
+        if (forceValidation)
+        {
+            Receipt storedReceipt = _receiptService
+                                    .Find(filter: existingReceipt => existingReceipt.OrderId == transactionId)
+                                    .FirstOrDefault();
+            
+            if (storedReceipt == null)
+            {
+                return new AppleVerificationResult
+                       {
+                           Status = AppleVerificationResult.SuccessStatus.True,
+                           Response = verified.Receipt,
+                           TransactionId = transactionId,
+                           ReceiptKey = $"{PlatformEnvironment.Deployment}_s_iosReceipt_{transactionId}",
+                           ReceiptData = verified.Receipt.JSON,
+                           Timestamp = Convert.ToInt64(verified.Receipt.ReceiptCreationDateMs)
+                       };
+            }
+            return new AppleVerificationResult
+                   {
+                       Status = AppleVerificationResult.SuccessStatus.Duplicated,
+                       Response = verified.Receipt,
+                       TransactionId = transactionId,
+                       ReceiptKey = $"{PlatformEnvironment.Deployment}_s_iosReceipt_{transactionId}",
+                       ReceiptData = verified.Receipt.JSON,
+                       Timestamp = Convert.ToInt64(verified.Receipt.ReceiptCreationDateMs)
+                   };
+        }
 
         if (verified.Status == 0)
         {

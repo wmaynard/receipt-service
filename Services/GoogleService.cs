@@ -16,8 +16,42 @@ public class GoogleService : VerificationService
 #pragma warning restore
 
     // Attempts to verify an aos receipt
-    public VerificationResult VerifyGoogle(Receipt receipt, string signature, RumbleJson receiptData, string accountId)
+    public VerificationResult VerifyGoogle(Receipt receipt, string signature, RumbleJson receiptData, string accountId, bool forceValidation)
     {
+        if (forceValidation)
+        {
+            string receiptKey = $"{PlatformEnvironment.Deployment}_s_aosReceipt_{receipt.OrderId}";
+            Receipt storedReceipt = _receiptService
+                                    .Find(filter: existingReceipt => existingReceipt.OrderId == receipt.OrderId)
+                                    .FirstOrDefault();
+            
+            if (storedReceipt == null)
+            {
+                return new VerificationResult(
+                                              status: VerificationResult.SuccessStatus.True,
+                                              response: receipt,
+                                              transactionId: receipt.OrderId,
+                                              offerId: receipt.ProductId,
+                                              receiptKey: receiptKey,
+                                              receiptData: receipt.JSON,
+                                              timestamp: receipt.PurchaseTime
+                                             );
+            }
+            
+            if (storedReceipt.AccountId == accountId)
+            {
+                return new VerificationResult(
+                                              status: VerificationResult.SuccessStatus.Duplicated,
+                                              response: receipt,
+                                              transactionId: receipt.OrderId,
+                                              offerId: receipt.ProductId,
+                                              receiptKey: receiptKey,
+                                              receiptData: receipt.JSON,
+                                              timestamp: receipt.PurchaseTime
+                                             );
+            }
+        }
+        
         if (signature == null)
         {
             throw new ReceiptException(receipt, "Failed to verify Google receipt. No signature provided.");

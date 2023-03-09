@@ -43,6 +43,8 @@ public class TopController : PlatformController
             loadTest = Optional<bool>(key: "loadTest");
         }
 
+        bool forceValidation = Optional<bool>(key: "forceValidation");
+
         switch (channel)
         {
             case "aos":
@@ -55,7 +57,7 @@ public class TopController : PlatformController
                     throw new ReceiptException(receipt,
                                                "Receipt called with 'aos' as the channel without a signature. 'aos' receipts require a signature");
                 }
-                VerificationResult validated = ValidateAndroid(receipt, accountId, signature, receiptData, loadTest);
+                VerificationResult validated = ValidateAndroid(receipt, accountId, signature, receiptData, loadTest, forceValidation);
                 return Ok(new RumbleJson
                           {
                               {"success", validated.Status},
@@ -64,7 +66,7 @@ public class TopController : PlatformController
             case "ios":
                 string appleReceipt = Require<string>(key: "receipt");
                 string transactionId = Require<string>(key: "transactionId");
-                AppleVerificationResult appleValidated = ValidateApple(appleReceipt, accountId, transactionId, loadTest);
+                AppleVerificationResult appleValidated = ValidateApple(appleReceipt, accountId, transactionId, loadTest, forceValidation);
                 return Ok(new RumbleJson
                           {
                               {"success", appleValidated.Status},
@@ -77,9 +79,9 @@ public class TopController : PlatformController
     }
 
     // Validation process for an ios receipt
-    private AppleVerificationResult ValidateApple(string receipt, string accountId, string transactionId, bool loadTest = false)
+    private AppleVerificationResult ValidateApple(string receipt, string accountId, string transactionId, bool loadTest = false, bool forceValidation = false)
     {
-        AppleVerificationResult output = _appleService.VerifyApple(receipt: receipt, transactionId: transactionId, accountId: accountId);
+        AppleVerificationResult output = _appleService.VerifyApple(receipt: receipt, transactionId: transactionId, accountId: accountId, forceValidation: forceValidation);
             
         // response from apple
         // string environment (Production, Sandbox)
@@ -157,7 +159,7 @@ public class TopController : PlatformController
     }
 
     // Validation process for an aos receipt
-    private VerificationResult ValidateAndroid(Receipt receipt, string accountId, string signature, RumbleJson receiptData, bool loadTest = false)
+    private VerificationResult ValidateAndroid(Receipt receipt, string accountId, string signature, RumbleJson receiptData, bool loadTest = false, bool forceValidation = false)
     {
         receipt.Validate();
         
@@ -170,7 +172,7 @@ public class TopController : PlatformController
         //     .Request($"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{receipt.PackageName}/purchases/products/{receipt.ProductId}/tokens/{receipt.PurchaseToken}")
         //     .OnFailure(response => Log.Local(Owner.Will, response.AsGenericData.JSON, emphasis: Log.LogType.ERROR))
         //     .Get(out GenericData json, out int code);
-        VerificationResult output = _googleService.VerifyGoogle(receipt: receipt, signature: signature, receiptData: receiptData, accountId: accountId);
+        VerificationResult output = _googleService.VerifyGoogle(receipt: receipt, signature: signature, receiptData: receiptData, accountId: accountId, forceValidation: forceValidation);
 
         switch (output?.Status)
         {
