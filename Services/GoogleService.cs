@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using RCL.Logging;
+using Rumble.Platform.Common.Services;
 using Rumble.Platform.Common.Utilities;
 using Rumble.Platform.Data;
 using Rumble.Platform.ReceiptService.Exceptions;
@@ -14,6 +15,7 @@ public class GoogleService : VerificationService
 #pragma warning disable
     private readonly ReceiptService          _receiptService;
     private readonly ForcedValidationService _forcedValidationService;
+    private readonly ApiService              _apiService;
 #pragma warning restore
 
     // Attempts to verify an aos receipt
@@ -85,6 +87,20 @@ public class GoogleService : VerificationService
         {
             Log.Error(owner: Owner.Nathan, message: "Error occured while attempting to verify Google receipt.",
                       data:$"Account ID: {accountId}. Exception: {e.Message}. Receipt data: {receiptData.Json}");
+            
+            _apiService.Alert(
+                title: "Error occured while attempting to verify Google receipt.",
+                message: "Error occured while attempting to verify Google receipt.",
+                countRequired: 1,
+                timeframe: 300,
+                data: new RumbleJson
+                    {
+                        { "Account ID", accountId },
+                        { "Exception", e},
+                        { "Receipt Data", receiptData}
+                    } 
+            );
+            
             return null;
         }
 
@@ -136,6 +152,20 @@ public class GoogleService : VerificationService
             }
         }
         Log.Error(owner: Owner.Nathan, message: "Failure to validate Google receipt.", data: $"Account ID: {accountId}. Receipt data: {receiptData.Json}. Signature: {signature}");
+        
+        _apiService.Alert(
+            title: "Failure to validate Google receipt.",
+            message: "Failure to validate Google receipt.",
+            countRequired: 5,
+            timeframe: 300,
+            data: new RumbleJson
+                {
+                    { "Account ID", accountId },
+                    { "Receipt Data", receiptData},
+                    { "Signature", signature}
+                } 
+        );
+        
         return new VerificationResult(
             status: VerificationResult.SuccessStatus.False,
             response: receipt,

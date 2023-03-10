@@ -72,6 +72,19 @@ public class AppleService : VerificationService
             {
                 Log.Error(owner: Owner.Nathan, message: "Receipt validated correctly with Apple but no matching transaction ID was found.", data: $"Account ID: {accountId}. Request transaction ID: {transactionId}. Receipt: {receipt}.");
                 
+                _apiService.Alert(
+                    title: "Failure to validate Apple receipt.",
+                    message: "Receipt validated correctly with Apple but no matching transaction ID was found.",
+                    countRequired: 5,
+                    timeframe: 300,
+                    data: new RumbleJson
+                    {
+                        { "Account ID", accountId },
+                        { "Transaction ID", transactionId},
+                        { "Receipt", receipt}
+                    } 
+                );
+                
                 return new AppleVerificationResult
                        {
                            Status = AppleVerificationResult.SuccessStatus.False,
@@ -188,6 +201,19 @@ public class AppleService : VerificationService
         {
             Log.Error(owner: Owner.Nathan, message: "An exception was encountered when sending a request to Apple's App store.", data: $"Account ID: {accountId}. Exception: {e}");
             
+            _apiService.Alert(
+                title: "Exception when sending a request to Apple.",
+                message: "An exception was encountered when sending a request to Apple's App store.",
+                countRequired: 1,
+                timeframe: 300,
+                data: new RumbleJson
+                {
+                    { "Account ID", accountId },
+                    { "Exception", e}
+                } 
+            );
+
+            
             AppleValidation failedResponse = new AppleValidation();
             failedResponse.Status = 500;
             
@@ -198,6 +224,18 @@ public class AppleService : VerificationService
         {
             Log.Error(owner: Owner.Nathan, message: "Request to Apple's App store failed. Apple's App store is down.", data:$"Account ID: {accountId}. Code: {code}");
 
+            _apiService.Alert(
+                title: "Request to Apple's App store failed.",
+                message: "Request to Apple's App store failed. Apple's App store is down.",
+                countRequired: 1,
+                timeframe: 300,
+                data: new RumbleJson
+                {
+                    { "Account ID", accountId },
+                    { "Code", code}
+                } 
+            );
+            
             AppleValidation failedResponse = new AppleValidation();
             failedResponse.Status = 500;
             
@@ -228,6 +266,18 @@ public class AppleService : VerificationService
             {
                 Log.Error(owner: Owner.Nathan, message: "An exception was encountered when sending a request to Apple's App store sandbox.", data: $"Account ID: {accountId}. Exception: {e}");
             
+                _apiService.Alert(
+                    title: "Exception when sending a request to Apple.",
+                    message: "An exception was encountered when sending a request to Apple's App store sandbox.",
+                    countRequired: 1,
+                    timeframe: 300,
+                    data: new RumbleJson
+                    {
+                        { "Account ID", accountId },
+                        { "Exception", e}
+                    } 
+                );
+                
                 AppleValidation failedResponse = new AppleValidation();
                 failedResponse.Status = 500;
             
@@ -239,6 +289,19 @@ public class AppleService : VerificationService
             if (!sandboxCode.Between(200, 299))
             {
                 Log.Error(owner: Owner.Nathan, message: "Request to the Apple's App Store sandbox failed. Apple's App store is down.", data: $"Account ID: {accountId}. Code: {sandboxCode}.");
+                
+                _apiService.Alert(
+                    title: "Request to Apple's App store sandbox failed.",
+                    message: "Request to Apple's App store sandbox failed. Apple's App store sandbox is down.",
+                    countRequired: 1,
+                    timeframe: 300,
+                    data: new RumbleJson
+                    {
+                        { "Account ID", accountId },
+                        { "Code", code}
+                    } 
+                );
+                
                 AppleValidation failedResponse = new AppleValidation();
                 failedResponse.Status = 500;
                 
@@ -248,6 +311,18 @@ public class AppleService : VerificationService
             if (sandboxResponse.Status != 0)
             {
                 Log.Error(owner: Owner.Nathan, message: "Failed to validate iOS receipt in sandbox. Apple's App store may have an outage.", data: $"Account ID: {accountId}. Status: {sandboxResponse.Status}");
+                
+                _apiService.Alert(
+                    title: "Failed to validate iOS receipt in sandbox.",
+                    message: "Failed to validate iOS receipt in sandbox. Apple's App store may have an outage.",
+                    countRequired: 1,
+                    timeframe: 300,
+                    data: new RumbleJson
+                    {
+                        { "Account ID", accountId },
+                        { "Status", sandboxResponse.Status}
+                    } 
+                );
             }
 
             return sandboxResponse;
@@ -261,6 +336,18 @@ public class AppleService : VerificationService
         if (response.Status != 0)
         {
             Log.Error(owner: Owner.Nathan, message: "Failed to validate iOS receipt. Apple's App store may have an outage.", data: $"Account ID: {accountId}. Status: {response.Status}");
+            
+            _apiService.Alert(
+                title: "Failed to validate iOS receipt.",
+                message: "Failed to validate iOS receipt. Apple's App store may have an outage.",
+                countRequired: 1,
+                timeframe: 300,
+                data: new RumbleJson
+                    {
+                        { "Account ID", accountId },
+                        { "Status", response.Status}
+                    } 
+            );
         }
 
         return response;

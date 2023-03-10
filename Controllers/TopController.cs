@@ -99,7 +99,19 @@ public class TopController : PlatformController
                 Log.Error(owner: Owner.Nathan, message: "Failed to validate Apple receipt. Order does not exist.", data: $"Account ID: {accountId}");
                 break;
             case AppleVerificationResult.SuccessStatus.DuplicatedFail:
-                Log.Error(owner: Owner.Nathan, message: "Duplicate Apple receipt processed with a different account ID.", data: $"Account ID: {accountId}");
+                Log.Error(owner: Owner.Nathan, message: "Duplicate Apple receipt processed with a different account ID. Potential malicious actor.", data: $"Account ID: {accountId}");
+                
+                _apiService.Alert(
+                    title: "Duplicate Apple receipt processed with a different account ID.",
+                    message: "Duplicate Apple receipt processed with a different account ID. Potential malicious actor.",
+                    countRequired: 1,
+                    timeframe: 300,
+                    data: new RumbleJson
+                        {
+                            { "Account ID", accountId }
+                        } 
+                );
+                
                 break;
             case AppleVerificationResult.SuccessStatus.Duplicated:
                 if (loadTest)
@@ -182,6 +194,18 @@ public class TopController : PlatformController
                 break;
             case VerificationResult.SuccessStatus.DuplicatedFail:
                 Log.Error(owner: Owner.Nathan, message: "Duplicate Google receipt processed with a different account ID.", data: $"Account ID: {accountId}");
+                
+                _apiService.Alert(
+                    title: "Duplicate Apple receipt processed with a different account ID.",
+                    message: "Duplicate Apple receipt processed with a different account ID. Potential malicious actor.",
+                    countRequired: 1,
+                    timeframe: 300,
+                    data: new RumbleJson
+                        {
+                            { "Account ID", accountId }
+                        } 
+                );
+                
                 break;
             case VerificationResult.SuccessStatus.Duplicated:
                 if (loadTest)
