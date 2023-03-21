@@ -13,6 +13,7 @@
     - auto-deploy deploy
   variables:
     KUBE_CONTEXT: "platform-services/platform-services-agent:platform-services"
+    K8S_SECRET_RUMBLE_REGION: "US"
   rules:
     - if: '$CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH'
       when: never
@@ -72,7 +73,6 @@ TT-production-a1:
     KUBE_CONTEXT: "platform-services/platform-services-agent:prod-a1-platform-services"
     KUBE_INGRESS_BASE_DOMAIN: prod.tower.rumblegames.com
     KUBE_NAMESPACE: "receipt-service-v2"
-    K8S_SECRET_RUMBLE_REGION: "US"
   tags:
     - production-a1
   environment:
@@ -100,7 +100,6 @@ TT-production-a2:
     KUBE_CONTEXT: "platform-services/platform-services-agent:prod-a2-platform-services"
     KUBE_INGRESS_BASE_DOMAIN: prod.tower.rumblegames.com
     KUBE_NAMESPACE: "receipt-service-v2"
-    K8S_SECRET_RUMBLE_REGION: "US"
   tags:
     - production-a2
   environment:
