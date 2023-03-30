@@ -331,26 +331,25 @@ public class AppleService : VerificationService
         if (response.Status == 21007 && (PlatformEnvironment.IsProd || isProd == "true"))
         {
             Log.Warn(owner: Owner.Nathan, message: "A testflight purchase was attempted on the production environment. This receipt validation is thus blocked.", data: $"Account ID: {accountId}.");
+
+            return response;
         }
 
         if (response.Status != 0)
         {
             Log.Error(owner: Owner.Nathan, message: "Failed to validate iOS receipt. Apple's App store may have an outage.", data: $"Account ID: {accountId}. Status: {response.Status}");
 
-            if (response.Status != 21007)
-            {
-                _apiService.Alert(
-                    title: "Failed to validate iOS receipt.",
-                    message: "Failed to validate iOS receipt. Apple's App store may have an outage.",
-                    countRequired: 1,
-                    timeframe: 300,
-                    data: new RumbleJson
-                    {
-                        {"Account ID", accountId},
-                        {"Status", response.Status}
-                    }
-                );
-            }
+            _apiService.Alert(
+                title: "Failed to validate iOS receipt.",
+                message: "Failed to validate iOS receipt. Apple's App store may have an outage.",
+                countRequired: 1,
+                timeframe: 300,
+                data: new RumbleJson
+                {
+                    {"Account ID", accountId},
+                    {"Status", response.Status}
+                }
+            );
         }
 
         return response;
