@@ -336,18 +336,21 @@ public class AppleService : VerificationService
         if (response.Status != 0)
         {
             Log.Error(owner: Owner.Nathan, message: "Failed to validate iOS receipt. Apple's App store may have an outage.", data: $"Account ID: {accountId}. Status: {response.Status}");
-            
-            _apiService.Alert(
-                title: "Failed to validate iOS receipt.",
-                message: "Failed to validate iOS receipt. Apple's App store may have an outage.",
-                countRequired: 1,
-                timeframe: 300,
-                data: new RumbleJson
+
+            if (response.Status != 21007)
+            {
+                _apiService.Alert(
+                    title: "Failed to validate iOS receipt.",
+                    message: "Failed to validate iOS receipt. Apple's App store may have an outage.",
+                    countRequired: 1,
+                    timeframe: 300,
+                    data: new RumbleJson
                     {
-                        { "Account ID", accountId },
-                        { "Status", response.Status}
-                    } 
-            );
+                        {"Account ID", accountId},
+                        {"Status", response.Status}
+                    }
+                );
+            }
         }
 
         return response;
