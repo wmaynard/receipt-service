@@ -53,7 +53,7 @@ service:
   additionalHosts:
   commonName: 
   externalPort: 5001
-  internalPort: 80
+  internalPort: 8080
 ingress:
   enabled: true
   paths: 
