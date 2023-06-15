@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
+using RCL.Logging;
 using Rumble.Platform.Common.Attributes;
 using Rumble.Platform.Common.Interop;
 using Rumble.Platform.Common.Services;
@@ -35,15 +37,15 @@ public class AppleChargebackController : PlatformController
 
 		byte[] bufferPayload = Convert.FromBase64String(signedPayload);
 		string decodedPayload = Encoding.UTF8.GetString(bufferPayload);
-		AppleChargeback appleChargeback = ((RumbleJson) decodedPayload).ToModel<AppleChargeback>(); // TODO check if this works
+		AppleChargeback appleChargeback = ((RumbleJson) decodedPayload).ToModel<AppleChargeback>();
 
 		byte[] bufferRenewalInfo = Convert.FromBase64String(appleChargeback.Data.JWSRenewalInfo);
 		string decodedRenewalInfo = Encoding.UTF8.GetString(bufferRenewalInfo);
-		AppleRenewalInfo appleRenewalInfo = ((RumbleJson) decodedPayload).ToModel<AppleRenewalInfo>(); // TODO check if this works
+		AppleRenewalInfo appleRenewalInfo = ((RumbleJson) decodedRenewalInfo).ToModel<AppleRenewalInfo>(); // for subscriptions, not yet used
 		
 		byte[] bufferTransactionInfo = Convert.FromBase64String(appleChargeback.Data.JWSTransaction);
 		string decodedTransactionInfo = Encoding.UTF8.GetString(bufferTransactionInfo);
-		AppleTransactionInfo appleTransactionInfo = ((RumbleJson) decodedPayload).ToModel<AppleTransactionInfo>(); // TODO check if this works
+		AppleTransactionInfo appleTransactionInfo = ((RumbleJson) decodedTransactionInfo).ToModel<AppleTransactionInfo>();
 
 		string transactionId = appleTransactionInfo.OriginalTransactionId;
 		
@@ -67,11 +69,11 @@ public class AppleChargebackController : PlatformController
 		List<SlackBlock> slackHeaders = new List<SlackBlock>()
         {
             new(SlackBlock.BlockType.HEADER, $"{PlatformEnvironment.Deployment} | Chargeback Banned Player | {DateTime.Now:yyyy.MM.dd HH:mm}"),
-            new($"Banned Player: {accountId}\nSource: Apple"),
+            new($"*Banned Player*: {accountId}\n*Source*: Apple\n*Owners:* {string.Join(", ", _slackMessageClient.UserSearch(Owner.Nathan).Select(user => user.Tag))}"),
             new(SlackBlock.BlockType.DIVIDER)
         };
 		List<SlackBlock> slackBlocks = new List<SlackBlock>();
-		slackBlocks.Add(new SlackBlock(text: $"AccountId:{accountId}\nTransactionId:{transactionId}\nVoided Timestamp:{appleTransactionInfo.RevocationDate}\nReason: {appleTransactionInfo.RevocationReason.ToString()}\nSource: Apple"));
+		slackBlocks.Add(new SlackBlock(text: $"*AccountId*: {accountId}\n*TransactionId*: {transactionId}\n*Voided Timestamp*: {appleTransactionInfo.RevocationDate}\n*Reason*: {appleTransactionInfo.RevocationReason.ToString()}\n*Source*: Apple"));
 
 		SlackMessage slackMessage = new SlackMessage(
 			blocks: slackHeaders,

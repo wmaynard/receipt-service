@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using MongoDB.Bson.Serialization.Attributes;
 using RCL.Logging;
 using Rumble.Platform.Common.Exceptions;
@@ -144,7 +145,7 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 			);
 		}
 
-		if (res.Optional<PaginationToken>("tokenPagination").NextPageToken != null)
+		if (res.Optional<PaginationToken>("tokenPagination") != null)
 		{
 			_nextPageToken = res.Optional<PaginationToken>(key: "tokenPagination").NextPageToken;
 		}
@@ -186,11 +187,11 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 		List<SlackBlock> slackHeaders = new List<SlackBlock>()
 		                                {
 			                                new(SlackBlock.BlockType.HEADER, $"{PlatformEnvironment.Deployment} | Chargeback Banned Player | {DateTime.Now:yyyy.MM.dd HH:mm}"),
-			                                new($"Banned Player: {accountId}\nSource: Google"),
+			                                new($"*Banned Player*: {accountId}\n*Source*: Google\n*Owners:* {string.Join(", ", _slackMessageClient.UserSearch(Owner.Nathan).Select(user => user.Tag))}"),
 			                                new(SlackBlock.BlockType.DIVIDER)
 		                                };
 		List<SlackBlock> slackBlocks = new List<SlackBlock>();
-		slackBlocks.Add(new SlackBlock(text: $"AccountId:{accountId}\nOrderId:{orderId}\nVoided Timestamp:{data.VoidedTimeMillis}\nReason: {data.VoidedReason.ToString()}\nSource: {data.VoidedSource.ToString()}"));
+		slackBlocks.Add(new SlackBlock(text: $"*AccountId*: {accountId}\n*OrderId*: {orderId}\n*Voided Timestamp*: {data.VoidedTimeMillis}\n*Reason*: {data.VoidedReason.ToString()}\n*Source*: {data.VoidedSource.ToString()}"));
 
 		SlackMessage slackMessage = new SlackMessage(
 			 blocks: slackHeaders,
