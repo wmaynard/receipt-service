@@ -156,9 +156,12 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 
 		_startTime = UnixTimeMS; // sets new start time for next pass
 
-		foreach (ChargebackData data in res.Optional<List<ChargebackData>>(key: "voidedPurchases"))
+		if (res.Optional<List<ChargebackData>>(key: "voidedPurchases") != null)
 		{
-			CreateTask(data);
+			foreach (ChargebackData data in res.Optional<List<ChargebackData>>(key: "voidedPurchases"))
+			{
+				CreateTask(data);
+			}
 		}
 	}	
 
