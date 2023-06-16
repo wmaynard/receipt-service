@@ -35,53 +35,71 @@ public class AppleChargebackController : PlatformController
 		// signed JWS representations have a signature to validate with header's alg parameter
 		string signedPayload = Require<string>(key: "signedPayload");
 
-		byte[] bufferPayload = Convert.FromBase64String(signedPayload);
-		string decodedPayload = Encoding.UTF8.GetString(bufferPayload);
-		AppleChargeback appleChargeback = ((RumbleJson) decodedPayload).ToModel<AppleChargeback>();
+		try
+		{
+			byte[] bufferPayload = Convert.FromBase64String(signedPayload);
+			string decodedPayload = Encoding.UTF8.GetString(bufferPayload);
+			AppleChargeback appleChargeback = ((RumbleJson) decodedPayload).ToModel<AppleChargeback>();
 
-		byte[] bufferRenewalInfo = Convert.FromBase64String(appleChargeback.Data.JWSRenewalInfo);
-		string decodedRenewalInfo = Encoding.UTF8.GetString(bufferRenewalInfo);
-		AppleRenewalInfo appleRenewalInfo = ((RumbleJson) decodedRenewalInfo).ToModel<AppleRenewalInfo>(); // for subscriptions, not yet used
-		
-		byte[] bufferTransactionInfo = Convert.FromBase64String(appleChargeback.Data.JWSTransaction);
-		string decodedTransactionInfo = Encoding.UTF8.GetString(bufferTransactionInfo);
-		AppleTransactionInfo appleTransactionInfo = ((RumbleJson) decodedTransactionInfo).ToModel<AppleTransactionInfo>();
+			byte[] bufferRenewalInfo = Convert.FromBase64String(appleChargeback.Data.JWSRenewalInfo);
+			string decodedRenewalInfo = Encoding.UTF8.GetString(bufferRenewalInfo);
+			AppleRenewalInfo appleRenewalInfo = ((RumbleJson) decodedRenewalInfo).ToModel<AppleRenewalInfo>(); // for subscriptions, not yet used
+			
+			byte[] bufferTransactionInfo = Convert.FromBase64String(appleChargeback.Data.JWSTransaction);
+			string decodedTransactionInfo = Encoding.UTF8.GetString(bufferTransactionInfo);
+			AppleTransactionInfo appleTransactionInfo = ((RumbleJson) decodedTransactionInfo).ToModel<AppleTransactionInfo>();
 
-		string transactionId = appleTransactionInfo.OriginalTransactionId;
-		
-		string accountId = _receiptService.GetAccountIdByOrderId(orderId: transactionId);
-		
-		_apiService.BanPlayer(accountId);
-		ChargebackLog chargebackLog = new ChargebackLog(
-			accountId: accountId,
-			orderId: transactionId,
-			voidedTimestamp: appleTransactionInfo.RevocationDate,
-			reason: appleTransactionInfo.RevocationReason.ToString(),
-			source: "Apple"
-		);
-		_chargebackLogService.Create(chargebackLog);
+			string transactionId = appleTransactionInfo.OriginalTransactionId;
+			
+			string accountId = _receiptService.GetAccountIdByOrderId(orderId: transactionId);
+			
+			_apiService.BanPlayer(accountId);
+			ChargebackLog chargebackLog = new ChargebackLog(
+				accountId: accountId,
+				orderId: transactionId,
+				voidedTimestamp: appleTransactionInfo.RevocationDate,
+				reason: appleTransactionInfo.RevocationReason.ToString(),
+				source: "Apple"
+			);
+			_chargebackLogService.Create(chargebackLog);
 
-		_slackMessageClient = new SlackMessageClient(
-	         channel: PlatformEnvironment.Require<string>(key: "slackChannel") ?? PlatformEnvironment.SlackLogChannel,
-	         token: PlatformEnvironment.SlackLogBotToken
-        );
-		
-		List<SlackBlock> slackHeaders = new List<SlackBlock>()
-        {
-            new(SlackBlock.BlockType.HEADER, $"{PlatformEnvironment.Deployment} | Chargeback Banned Player | {DateTime.Now:yyyy.MM.dd HH:mm}"),
-            new($"*Banned Player*: {accountId}\n*Source*: Apple\n*Owners:* {string.Join(", ", _slackMessageClient.UserSearch(Owner.Nathan).Select(user => user.Tag))}"),
-            new(SlackBlock.BlockType.DIVIDER)
-        };
-		List<SlackBlock> slackBlocks = new List<SlackBlock>();
-		slackBlocks.Add(new SlackBlock(text: $"*AccountId*: {accountId}\n*TransactionId*: {transactionId}\n*Voided Timestamp*: {appleTransactionInfo.RevocationDate}\n*Reason*: {appleTransactionInfo.RevocationReason.ToString()}\n*Source*: Apple"));
+			_slackMessageClient = new SlackMessageClient(
+		         channel: PlatformEnvironment.Require<string>(key: "slackChannel") ?? PlatformEnvironment.SlackLogChannel,
+		         token: PlatformEnvironment.SlackLogBotToken
+	        );
+			
+			List<SlackBlock> slackHeaders = new List<SlackBlock>()
+	        {
+	            new(SlackBlock.BlockType.HEADER, $"{PlatformEnvironment.Deployment} | Chargeback Banned Player | {DateTime.Now:yyyy.MM.dd HH:mm}"),
+	            new($"*Banned Player*: {accountId}\n*Source*: Apple\n*Owners:* {string.Join(", ", _slackMessageClient.UserSearch(Owner.Nathan).Select(user => user.Tag))}"),
+	            new(SlackBlock.BlockType.DIVIDER)
+	        };
+			List<SlackBlock> slackBlocks = new List<SlackBlock>();
+			slackBlocks.Add(new SlackBlock(text: $"*AccountId*: {accountId}\n*TransactionId*: {transactionId}\n*Voided Timestamp*: {appleTransactionInfo.RevocationDate}\n*Reason*: {appleTransactionInfo.RevocationReason.ToString()}\n*Source*: Apple"));
 
-		SlackMessage slackMessage = new SlackMessage(
-			blocks: slackHeaders,
-			attachments: new SlackAttachment("#2eb886", slackBlocks)
-		);
+			SlackMessage slackMessage = new SlackMessage(
+				blocks: slackHeaders,
+				attachments: new SlackAttachment("#2eb886", slackBlocks)
+			);
 
-		_slackMessageClient.Send(message: slackMessage);
-		
+			_slackMessageClient.Send(message: slackMessage);
+			
+		}
+		catch (Exception e)
+		{
+			Log.Error(owner: Owner.Nathan, message: "Error occurred when attempting to process Apple chargeback.", data: $"Exception: {e}");
+			_apiService.Alert(
+				title: "Error occurred when attempting to process Apple chargeback.",
+				message: "Error occurred when attempting to process Apple chargeback. Either there is an issue processing Apple's signed payload or there is a malicious actor",
+				countRequired: 10,
+				timeframe: 300,
+				data: new RumbleJson
+				    {
+				        { "exception", e }
+				    } ,
+				owner: Owner.Nathan
+			);
+		}
 		return Ok();
 	}
 }
