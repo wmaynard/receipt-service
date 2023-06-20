@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
 using RCL.Logging;
 using Rumble.Platform.Common.Exceptions;
@@ -207,18 +208,23 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 	public class ChargebackData : PlatformDataModel // public because of accessibilty?
 	{
 		[BsonElement("kind")]
+		[JsonInclude, JsonPropertyName("kind")]
 		public string Kind { get; set; }
 		
 		[BsonElement("purchaseToken")]
+		[JsonInclude, JsonPropertyName("purchaseToken")]
 		public string PurchaseToken { get; set; }
 		
 		[BsonElement("purchaseTimeMillis")]
+		[JsonInclude, JsonPropertyName("purchaseTimeMillis")]
 		public long PurchaseTimeMillis { get; set; }
 		
 		[BsonElement("voidedTimeMillis")]
+		[JsonInclude, JsonPropertyName("voidedTimeMillis")]
 		public long VoidedTimeMillis { get; set; }
 		
 		[BsonElement("orderId")]
+		[JsonInclude, JsonPropertyName("orderId")]
 		public string OrderId { get; set; }
 		
 		public enum VoidedSources
@@ -228,6 +234,7 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 			Google
 		}
 		[BsonElement("voidedSource")]
+		[JsonInclude, JsonPropertyName("voidedSource")]
 		public VoidedSources VoidedSource { get; set; } // enum; 0: User, 1: Developer, 2: Google
 		
 		public enum VoidedReasons
@@ -242,6 +249,7 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 			Chargeback
 		}
 		[BsonElement("voidedReason")]
+		[JsonInclude, JsonPropertyName("voidedReason")]
 		public VoidedReasons VoidedReason { get; set; } // enum; 0: Other, 1: Remorse, 2: Not_received, 3: Defective, 4: Accidental_purchase, 5: Fraud, 6: Friendly_fraud, 7: Chargeback
 	}
 }
