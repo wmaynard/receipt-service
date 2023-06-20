@@ -69,6 +69,7 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 			string jwt;
 			try
 			{
+				Log.Info(owner: Owner.Nathan, message: "Attempting to generate JWT.");
 				jwt = GenerateJWT.GenerateJWTToken(header: headerJson, payload: claimsJson, rsaPrivateKey: privateKey);
 			}
 			catch (Exception e)
