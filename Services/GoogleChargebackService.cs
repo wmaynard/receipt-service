@@ -156,6 +156,7 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 		}
 
 		_startTime = UnixTimeMS; // sets new start time for next pass
+		Log.Info(owner: Owner.Nathan, message: "Google voided purchases fetched.");
 
 		if (res.Optional<List<ChargebackData>>(key: "voidedPurchases") != null)
 		{
