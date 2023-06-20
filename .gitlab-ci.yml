@@ -26,8 +26,8 @@ variables:
   K8S_SECRET_MONGODB_URI: "$MONGODB_URI"
   K8S_SECRET_androidStoreKey: "$androidStoreKey"
   K8S_SECRET_appleSharedSecret: "$appleSharedSecret"
-  K8S_SECRET_googleServiceAccountClientEmail: "googleServiceAccountClientEmail"
-  K8S_SECRET_googleServiceAccountPrivateKey: "googleServiceAccountPrivateKey"
+  K8S_SECRET_googleServiceAccountClientEmail: "$googleServiceAccountClientEmail"
+  K8S_SECRET_googleServiceAccountPrivateKey: "$googleServiceAccountPrivateKey"
   K8S_SECRET_iosVerifyReceiptSandbox: "$iosVerifyReceiptSandbox"
   K8S_SECRET_iosVerifyReceiptUrl: "$iosVerifyReceiptUrl"
   
