@@ -31,7 +31,7 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 
 	private string _nextPageToken = null; // used if over maximum results
 	private long _tokenExpireTime = UnixTime; // in seconds, used for fetching a new auth token when previous expires
-	private long _startTime = UnixTimeMS - 30_000; // in milliseconds, start time of requested voided purchases, set to start 30s before. to be updated every pass
+	private long _startTime = UnixTimeMS - 30_000; // 86_400_000; // in milliseconds, start time of requested voided purchases, set to start a day before to cover downtime. to be updated every pass
 	private string _authToken = null;
 	
 	public GoogleChargebackService() : base(collection: "chargebacks", primaryNodeTaskCount: 10, secondaryNodeTaskCount: 0, intervalMs: CONFIG_TIME_BUFFER) { }
@@ -111,11 +111,6 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 									{ "type", CONFIG_TYPE }
 								};
 
-		if (_nextPageToken != null)
-		{
-			parameters.Add(key: "token", value: _nextPageToken);
-		}
-
 		_apiService
 			// url with package name in dynamic config
 			// https://www.googleapis.com/androidpublisher/v3/applications/your_package_name/purchases/voidedpurchases?access_token=your_auth_token
@@ -145,7 +140,15 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 				owner: Owner.Nathan
 			);
 		}
-
+		
+		if (res.Optional<List<ChargebackData>>(key: "voidedPurchases") != null)
+		{
+			foreach (ChargebackData data in res.Optional<List<ChargebackData>>(key: "voidedPurchases"))
+			{
+				CreateTask(data);
+			}
+		}
+		
 		if (res.Optional<PaginationToken>("tokenPagination") != null)
 		{
 			_nextPageToken = res.Optional<PaginationToken>(key: "tokenPagination").NextPageToken;
@@ -154,8 +157,60 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 		{
 			_nextPageToken = null;
 		}
+		
+		while (_nextPageToken != null)
+		{
+			parameters["token"] = _nextPageToken;
+			
+			_apiService
+				// url with package name in dynamic config
+				// https://www.googleapis.com/androidpublisher/v3/applications/your_package_name/purchases/voidedpurchases?access_token=your_auth_token
+				.Request(url: _dynamicConfig.Require<string>(key:"googleVoidedPurchasesUrl") + _authToken)
+				.AddAuthorization(_authToken)
+				.AddParameters(parameters)
+				.OnFailure(response =>
+	            {
+		            Log.Error(Owner.Nathan, message: "Unable to fetch Google voided purchases.", data: new
+	                {
+						Response = response.AsRumbleJson
+	                });
+	            })
+				.Get(out RumbleJson nextRes, out int nextCode);
 
-		_startTime = UnixTimeMS; // sets new start time for next pass
+			if (!code.Between(200, 299))
+			{
+				_apiService.Alert(
+				                  title: "Unable to fetch Google voided purchases.",
+				                  message: "Unable to fetch Google voided purchases. Google's API may be down.",
+				                  countRequired: 10,
+				                  timeframe: 300,
+				                  data: new RumbleJson
+				                        {
+					                        { "code", nextCode }
+				                        } ,
+				                  owner: Owner.Nathan
+				                 );
+			}
+
+			if (nextRes.Optional<List<ChargebackData>>(key: "voidedPurchases") != null)
+			{
+				foreach (ChargebackData data in nextRes.Optional<List<ChargebackData>>(key: "voidedPurchases"))
+				{
+					CreateTask(data);
+				}
+			}
+			
+			if (nextRes.Optional<PaginationToken>("tokenPagination") != null)
+			{
+				_nextPageToken = nextRes.Optional<PaginationToken>(key: "tokenPagination").NextPageToken;
+			}
+			else
+			{
+				_nextPageToken = null;
+			}
+		}
+
+		_startTime = UnixTimeMS - 30_000; // 86_400_000; // sets new start time for next pass
 		Log.Info(owner: Owner.Nathan, message: "Google voided purchases fetched.");
 
 		if (res.Optional<List<ChargebackData>>(key: "voidedPurchases") != null)
@@ -170,40 +225,47 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 	protected override void ProcessTask(ChargebackData data)
 	{
 		string orderId = data.OrderId;
-		
-		string accountId = _receiptService.GetAccountIdByOrderId(orderId);
 
-		_apiService.BanPlayer(accountId);
+		if (_chargebackLogService.Find(log => log.OrderId == orderId).FirstOrDefault() != null)
+		{
+			string accountId = _receiptService.GetAccountIdByOrderId(orderId);
+			
+			_apiService.BanPlayer(accountId);
 
-		ChargebackLog chargebackLog = new ChargebackLog(
-			accountId: accountId,
-			orderId: orderId,
-			voidedTimestamp: data.VoidedTimeMillis,
-			reason: data.VoidedReason.ToString(),
-			source: data.VoidedSource.ToString()
-		);
-		_chargebackLogService.Create(chargebackLog);
-		
-		_slackMessageClient = new SlackMessageClient(
-		                                             channel: PlatformEnvironment.Require<string>(key: "slackChannel") ?? PlatformEnvironment.SlackLogChannel,
-		                                             token: PlatformEnvironment.SlackLogBotToken
-		                                            );
-		
-		List<SlackBlock> slackHeaders = new List<SlackBlock>()
-		                                {
-			                                new(SlackBlock.BlockType.HEADER, $"{PlatformEnvironment.Deployment} | Chargeback Banned Player | {DateTime.Now:yyyy.MM.dd HH:mm}"),
-			                                new($"*Banned Player*: {accountId}\n*Source*: Google\n*Owners:* {string.Join(", ", _slackMessageClient.UserSearch(Owner.Nathan).Select(user => user.Tag))}"),
-			                                new(SlackBlock.BlockType.DIVIDER)
-		                                };
-		List<SlackBlock> slackBlocks = new List<SlackBlock>();
-		slackBlocks.Add(new SlackBlock(text: $"*AccountId*: {accountId}\n*OrderId*: {orderId}\n*Voided Timestamp*: {data.VoidedTimeMillis}\n*Reason*: {data.VoidedReason.ToString()}\n*Source*: {data.VoidedSource.ToString()}"));
+			ChargebackLog chargebackLog = new ChargebackLog(
+			                                                accountId: accountId,
+			                                                orderId: orderId,
+			                                                voidedTimestamp: data.VoidedTimeMillis,
+			                                                reason: data.VoidedReason.ToString(),
+			                                                source: data.VoidedSource.ToString()
+			                                               );
+			_chargebackLogService.Create(chargebackLog);
 
-		SlackMessage slackMessage = new SlackMessage(
-			 blocks: slackHeaders,
-			 attachments: new SlackAttachment("#2eb886", slackBlocks)
-		);
-		
-		_slackMessageClient.Send(message: slackMessage);
+			_slackMessageClient = new SlackMessageClient(
+			                                             channel:
+			                                             PlatformEnvironment.Require<string>(key: "slackChannel") ??
+			                                             PlatformEnvironment.SlackLogChannel,
+			                                             token: PlatformEnvironment.SlackLogBotToken
+			                                            );
+
+			List<SlackBlock> slackHeaders = new List<SlackBlock>()
+			                                {
+				                                new(SlackBlock.BlockType.HEADER,
+				                                    $"{PlatformEnvironment.Deployment} | Chargeback Banned Player | {DateTime.Now:yyyy.MM.dd HH:mm}"),
+				                                new($"*Banned Player*: {accountId}\n*Source*: Google\n*Owners:* {string.Join(", ", _slackMessageClient.UserSearch(Owner.Nathan).Select(user => user.Tag))}"),
+				                                new(SlackBlock.BlockType.DIVIDER)
+			                                };
+			List<SlackBlock> slackBlocks = new List<SlackBlock>();
+			slackBlocks.Add(new SlackBlock(text:
+			                               $"*AccountId*: {accountId}\n*OrderId*: {orderId}\n*Voided Timestamp*: {data.VoidedTimeMillis}\n*Reason*: {data.VoidedReason.ToString()}\n*Source*: {data.VoidedSource.ToString()}"));
+
+			SlackMessage slackMessage = new SlackMessage(
+			                                             blocks: slackHeaders,
+			                                             attachments: new SlackAttachment("#2eb886", slackBlocks)
+			                                            );
+
+			_slackMessageClient.Send(message: slackMessage);
+		}
 	}
 
 	public class ChargebackData : PlatformDataModel // public because of accessibilty?
