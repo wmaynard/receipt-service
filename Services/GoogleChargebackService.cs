@@ -72,7 +72,7 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 			}
 			catch (Exception e)
 			{
-				Log.Error(owner: Owner.Nathan, message: "Error occurred attempting to generate JWT to fetch Google service account auth key.", data: e);
+				Log.Error(owner: Owner.Nathan, message: "Error occurred attempting to generate JWT to fetch Google service account auth key.", data: $"Exception: {e}. Header: {headerJson}. Claims: {claimsJson}.");
 				throw new PlatformException(message:
 				                            "Error occurred attempting to generate JWT to fetch Google service account auth key.");
 			}
