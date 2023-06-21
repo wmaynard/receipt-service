@@ -217,7 +217,6 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 		}
 
 		_startTime = UnixTimeMS - 86_400_000; // sets new start time for next pass
-		Log.Info(owner: Owner.Nathan, message: "Google voided purchases fetched.");
 	}	
 
 	protected override void ProcessTask(ChargebackData data)
