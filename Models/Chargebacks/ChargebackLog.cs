@@ -14,6 +14,7 @@ public class ChargebackLog : PlatformCollectionDocument
 	internal const string DB_KEY_REASON           = "rsn";
 	internal const string DB_KEY_SOURCE           = "src";
 	internal const string DB_KEY_TIMESTAMP        = "ts";
+	internal const string DB_KEY_UNBANNED         = "unban";
 
 	public const string FRIENDLY_KEY_ACCOUNT_ID       = "accountId";
 	public const string FRIENDLY_KEY_ORDER_ID         = "orderId";
@@ -21,6 +22,7 @@ public class ChargebackLog : PlatformCollectionDocument
 	public const string FRIENDLY_KEY_REASON           = "reason";
 	public const string FRIENDLY_KEY_SOURCE           = "source";
 	public const string FRIENDLY_KEY_TIMESTAMP        = "timestamp";
+	public const string FRIENDLY_KEY_UNBANNED         = "unbanned";
 	
 	[SimpleIndex]
 	[CompoundIndex(@group: "INDEX_GROUP_CHARGEBACK", priority: 0)]
@@ -49,7 +51,11 @@ public class ChargebackLog : PlatformCollectionDocument
 	[JsonInclude, JsonPropertyName(FRIENDLY_KEY_TIMESTAMP)]
 	public long Timestamp { get; set; }
 	
-	public ChargebackLog(string accountId, string orderId, long voidedTimestamp, string reason, string source)
+	[BsonElement(DB_KEY_UNBANNED)]
+	[JsonInclude, JsonPropertyName(FRIENDLY_KEY_UNBANNED)]
+	public bool Unbanned { get; set; }
+	
+	public ChargebackLog(string accountId, string orderId, long voidedTimestamp, string reason, string source, bool unbanned = false)
 	{
 		AccountId = accountId;
 		OrderId = orderId;
@@ -57,5 +63,6 @@ public class ChargebackLog : PlatformCollectionDocument
 		Reason = reason;
 		Source = source;
 		Timestamp = Common.Utilities.Timestamp.UnixTime;
+		Unbanned = unbanned;
 	}
 }

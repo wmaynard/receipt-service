@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using Rumble.Platform.Common.Attributes;
 using Rumble.Platform.Common.Exceptions;
 using Rumble.Platform.Common.Utilities;
@@ -89,5 +90,18 @@ public class AdminController : PlatformController
         }
 
         return Ok(new {Chargebacks = chargebackLogs});
+    }
+    
+    // Notifies the service to unban a player who was banned by chargeback
+    [HttpPatch, Route(template: "chargebacks/unban")]
+    public ActionResult ChargebackUnban()
+    {
+        string accountId = Require<string>(key: "accountId");
+
+        _apiService.UnbanPlayer(accountId);
+        _chargebackLogService.UnbanByAccount(accountId);
+
+        return Ok();
+
     }
 }
