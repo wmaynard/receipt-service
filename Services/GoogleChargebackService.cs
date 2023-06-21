@@ -31,7 +31,7 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 
 	private string _nextPageToken = null; // used if over maximum results
 	private long _tokenExpireTime = UnixTime; // in seconds, used for fetching a new auth token when previous expires
-	private long _startTime = UnixTimeMS - 30_000; // 86_400_000; // in milliseconds, start time of requested voided purchases, set to start a day before to cover downtime. to be updated every pass
+	private long _startTime = UnixTimeMS - 86_400_000; // in milliseconds, start time of requested voided purchases, set to start a day before to cover downtime. to be updated every pass
 	private string _authToken = null;
 	
 	public GoogleChargebackService() : base(collection: "chargebacks", primaryNodeTaskCount: 10, secondaryNodeTaskCount: 0, intervalMs: CONFIG_TIME_BUFFER) { }
@@ -69,7 +69,6 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 			string jwt;
 			try
 			{
-				Log.Info(owner: Owner.Nathan, message: "Attempting to generate JWT.");
 				jwt = GenerateJWT.GenerateJWTToken(header: headerJson, payload: claimsJson, rsaPrivateKey: privateKey);
 			}
 			catch (Exception e)
@@ -211,7 +210,7 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 			}
 		}
 
-		_startTime = UnixTimeMS - 30_000; // 86_400_000; // sets new start time for next pass
+		_startTime = UnixTimeMS - 86_400_000; // sets new start time for next pass
 		Log.Info(owner: Owner.Nathan, message: "Google voided purchases fetched.");
 
 		if (res.Optional<List<ChargebackData>>(key: "voidedPurchases") != null)

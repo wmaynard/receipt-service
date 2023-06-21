@@ -18,14 +18,10 @@ public class GenerateJWT
 {
 	public static string GenerateJWTToken(RumbleJson header, RumbleJson payload, string rsaPrivateKey)
 	{
-		Log.Info(owner: Owner.Nathan, message: "Test log step 1.", data: $"header: {header}. payload: {payload}.");
 		var rsaParams = GetRsaParameters(rsaPrivateKey);
-		Log.Info(owner: Owner.Nathan, message: "Test log step 2.", data: $"rsaParams: {rsaParams}.");
 		var encoder = GetRS256JWTEncoder(rsaParams);
-		Log.Info(owner: Owner.Nathan, message: "Test log step 3.", data: $"encoder: {encoder}.");
 
 		var token = encoder.Encode(header, payload, Array.Empty<byte>());
-		Log.Info(owner: Owner.Nathan, message: "Test log step 4.", data: $"token: {token}.");
 
 		return token;
 	}
@@ -50,7 +46,6 @@ public class GenerateJWT
 		{
 			var pemReader = new PemReader(stringReader);
 			var privateRsaParams = pemReader.ReadObject() as RsaPrivateCrtKeyParameters;
-			Log.Info(owner: Owner.Nathan, message: "Test log to check null ref.", data: $"pemReader: {pemReader}. privateRsaParams: {privateRsaParams}.");
 			return DotNetUtilities.ToRSAParameters(privateRsaParams);
 		}
 	}
