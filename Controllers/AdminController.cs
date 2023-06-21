@@ -77,16 +77,17 @@ public class AdminController : PlatformController
     public ActionResult GetChargebacks()
     {
         string accountId = Optional<string>(key: "accountId");
+        bool unbanned = Optional<bool>(key: "includeUnbanned");
 
         List<ChargebackLog> chargebackLogs;
 
         if (accountId != null)
         {
-            chargebackLogs = _chargebackLogService.GetLogsByAccount(accountId);
+            chargebackLogs = _chargebackLogService.GetLogsByAccount(accountId, unbanned);
         }
         else
         {
-            chargebackLogs = _chargebackLogService.GetLogs();
+            chargebackLogs = _chargebackLogService.GetLogs(unbanned);
         }
 
         return Ok(new {Chargebacks = chargebackLogs});

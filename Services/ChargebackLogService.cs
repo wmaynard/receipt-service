@@ -12,18 +12,32 @@ public class ChargebackLogService : PlatformMongoService<ChargebackLog>
 	public ChargebackLogService() : base(collection: "chargebackLogs") {  }
 	
 	// Fetch logs
-	public List<ChargebackLog> GetLogs()
+	public List<ChargebackLog> GetLogs(bool unbanned)
 	{
-		return _collection.Find(log => true).ToList()
+		if (unbanned)
+		{
+			return _collection.Find(log => true).ToList()
+			                  .Select(log => log)
+			                  .OrderBy(log => log.Timestamp)
+			                  .ToList();
+		}
+		return _collection.Find(log => log.Unbanned == false).ToList()
 		                  .Select(log => log)
 		                  .OrderBy(log => log.Timestamp)
 		                  .ToList();
 	}
 	
 	// Fetch logs for an accountId
-	public List<ChargebackLog> GetLogsByAccount(string accountId)
+	public List<ChargebackLog> GetLogsByAccount(string accountId, bool unbanned)
 	{
-		return _collection.Find(log => log.AccountId == accountId).ToList()
+		if (unbanned)
+		{
+			return _collection.Find(log => log.AccountId == accountId).ToList()
+							  .Select(log => log)
+							  .OrderBy(log => log.Timestamp)
+							  .ToList();
+		}
+		return _collection.Find(log => log.AccountId == accountId && log.Unbanned == false).ToList()
 		                  .Select(log => log)
 		                  .OrderBy(log => log.Timestamp)
 		                  .ToList();
