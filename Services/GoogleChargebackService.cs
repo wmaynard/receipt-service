@@ -218,7 +218,7 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 	{
 		string orderId = data.OrderId;
 
-		if (_chargebackLogService.Find(log => log.OrderId == orderId).FirstOrDefault() != null)
+		if (_chargebackLogService.Find(log => log.OrderId == orderId).FirstOrDefault() == null)
 		{
 			string accountId = _receiptService.GetAccountIdByOrderId(orderId);
 			
