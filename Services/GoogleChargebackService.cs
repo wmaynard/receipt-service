@@ -95,6 +95,8 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 				})
 				.Post(out GoogleAuthResponse authRes, out int authCode);
 
+			Log.Warn(owner: Owner.Nathan, message: $"Google token fetch response: {authRes}.");
+			
 			_authToken = authRes.AccessToken;
 			_tokenExpireTime += authRes.ExpiresIn;
 		}
@@ -110,7 +112,7 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 									{ "maxResults", CONFIG_MAX_RESULTS },
 									{ "type", CONFIG_TYPE }
 								};
-
+		
 		_apiService
 			// url with package name in dynamic config
 			// https://www.googleapis.com/androidpublisher/v3/applications/your_package_name/purchases/voidedpurchases?access_token=your_auth_token
