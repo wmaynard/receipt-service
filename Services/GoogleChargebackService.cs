@@ -145,7 +145,7 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 		{
 			foreach (ChargebackData data in res.Optional<List<ChargebackData>>(key: "voidedPurchases"))
 			{
-				if (_chargebackLogService.Find(log => log.OrderId == data.OrderId).FirstOrDefault() == null)
+				if (_chargebackLogService.Find(log => log.OrderId == data.OrderId).FirstOrDefault() == null && _receiptService.Find(receipt => receipt.OrderId == data.OrderId).FirstOrDefault() != null)
 				{
 					CreateTask(data);
 				}
@@ -199,9 +199,9 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 			{
 				foreach (ChargebackData data in nextRes.Optional<List<ChargebackData>>(key: "voidedPurchases"))
 				{
-					if (_chargebackLogService.Find(log => log.OrderId == data.OrderId).FirstOrDefault() == null)
+					if (_chargebackLogService.Find(log => log.OrderId == data.OrderId).FirstOrDefault() == null && _receiptService.Find(receipt => receipt.OrderId == data.OrderId).FirstOrDefault() != null)
 					{
-						CreateTask(data);
+							CreateTask(data);
 					}
 				}
 			}
