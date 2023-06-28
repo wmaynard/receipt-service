@@ -230,36 +230,37 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 			_apiService.BanPlayer(accountId);
 
 			ChargebackLog chargebackLog = new ChargebackLog(
-			                                                accountId: accountId,
-			                                                orderId: orderId,
-			                                                voidedTimestamp: data.VoidedTimeMillis,
-			                                                reason: data.VoidedReason.ToString(),
-			                                                source: data.VoidedSource.ToString()
-			                                               );
+	            accountId: accountId,
+	            orderId: orderId,
+	            voidedTimestamp: data.VoidedTimeMillis,
+	            reason: data.VoidedReason.ToString(),
+	            source: data.VoidedSource.ToString()
+			);
 			_chargebackLogService.Create(chargebackLog);
 
 			_slackMessageClient = new SlackMessageClient(
-			                                             channel:
-			                                             PlatformEnvironment.Require<string>(key: "slackChannel") ??
-			                                             PlatformEnvironment.SlackLogChannel,
-			                                             token: PlatformEnvironment.SlackLogBotToken
-			                                            );
+				channel:
+				PlatformEnvironment.Require<string>(key: "slackChannel") ??
+				PlatformEnvironment.SlackLogChannel,
+				token: PlatformEnvironment.SlackLogBotToken
+            );
 
 			List<SlackBlock> slackHeaders = new List<SlackBlock>()
-			                                {
-				                                new(SlackBlock.BlockType.HEADER,
-				                                    $"{PlatformEnvironment.Deployment} | Chargeback Banned Player | {DateTime.Now:yyyy.MM.dd HH:mm}"),
-				                                new($"*Banned Player*: {accountId}\n*Source*: Google\n*Owners:* {string.Join(", ", _slackMessageClient.UserSearch(Owner.Nathan).Select(user => user.Tag))}"),
-				                                new(SlackBlock.BlockType.DIVIDER)
-			                                };
+            {
+                new(SlackBlock.BlockType.HEADER,
+                    $"{PlatformEnvironment.Deployment} | Chargeback Banned Player | {DateTime.Now:yyyy.MM.dd HH:mm}"),
+                new($"*Banned Player*: {accountId}\n*Source*: Google\n*Owners:* {string.Join(", ", _slackMessageClient.UserSearch(Owner.Nathan).Select(user => user.Tag))}"),
+                new(SlackBlock.BlockType.DIVIDER)
+            };
 			List<SlackBlock> slackBlocks = new List<SlackBlock>();
 			slackBlocks.Add(new SlackBlock(text:
-			                               $"*AccountId*: {accountId}\n*OrderId*: {orderId}\n*Voided Timestamp*: {data.VoidedTimeMillis}\n*Reason*: {data.VoidedReason.ToString()}\n*Source*: {data.VoidedSource.ToString()}"));
+				$"*AccountId*: {accountId}\n*OrderId*: {orderId}\n*Voided Timestamp*: {data.VoidedTimeMillis}\n*Reason*: {data.VoidedReason.ToString()}\n*Source*: {data.VoidedSource.ToString()}")
+			);
 
 			SlackMessage slackMessage = new SlackMessage(
-			                                             blocks: slackHeaders,
-			                                             attachments: new SlackAttachment("#2eb886", slackBlocks)
-			                                            );
+				blocks: slackHeaders,
+				attachments: new SlackAttachment("#2eb886", slackBlocks)
+            );
 
 			_slackMessageClient.Send(message: slackMessage);
 		}

@@ -41,24 +41,27 @@ public class AppleChargebackController : PlatformController
 		{
 			byte[] bufferPayload = Convert.FromBase64String(signedPayload);
 			string decodedPayload = Encoding.UTF8.GetString(bufferPayload);
+			Log.Warn(owner: Owner.Nathan, message: "Apple chargeback payload decoded.", data: $"Decoded payload: {decodedPayload}."); // TODO remove when no longer needed
 			AppleChargeback appleChargeback = ((RumbleJson) decodedPayload).ToModel<AppleChargeback>();
-			Log.Warn(owner: Owner.Nathan, message: "Apple chargeback payload decoded.", data: $"Decoded payload: {decodedPayload}. Apple chargeback: {appleChargeback}."); // TODO remove when no longer needed
+			Log.Warn(owner: Owner.Nathan, message: "Apple chargeback payload parsed.", data: $"Apple chargeback: {appleChargeback.JSON}."); // TODO remove when no longer needed
 
 			byte[] bufferRenewalInfo = Convert.FromBase64String(appleChargeback.Data.JWSRenewalInfo);
 			string decodedRenewalInfo = Encoding.UTF8.GetString(bufferRenewalInfo);
+			Log.Warn(owner: Owner.Nathan, message: "Apple renewal info decoded.", data: $"Decoded Apple renewal: {decodedRenewalInfo}."); // TODO remove when no longer needed
 			AppleRenewalInfo appleRenewalInfo = ((RumbleJson) decodedRenewalInfo).ToModel<AppleRenewalInfo>(); // for subscriptions, not yet used
-			Log.Warn(owner: Owner.Nathan, message: "Apple renewal info decoded.", data: $"Decoded Apple renewal: {decodedRenewalInfo}. Apple renewal info: {appleRenewalInfo}."); // TODO remove when no longer needed
+			Log.Warn(owner: Owner.Nathan, message: "Apple renewal info parsed.", data: $"Apple renewal info: {appleRenewalInfo.JSON}."); // TODO remove when no longer needed
 			
 			byte[] bufferTransactionInfo = Convert.FromBase64String(appleChargeback.Data.JWSTransaction);
 			string decodedTransactionInfo = Encoding.UTF8.GetString(bufferTransactionInfo);
+			Log.Warn(owner: Owner.Nathan, message: "Apple transaction info decoded.", data: $"Decoded Apple transaction: {decodedTransactionInfo}."); // TODO remove when no longer needed
 			AppleTransactionInfo appleTransactionInfo = ((RumbleJson) decodedTransactionInfo).ToModel<AppleTransactionInfo>();
-			Log.Warn(owner: Owner.Nathan, message: "Apple transaction info decoded.", data: $"Decoded Apple transaction: {decodedTransactionInfo}. Apple transaction info: {appleTransactionInfo}."); // TODO remove when no longer needed
+			Log.Warn(owner: Owner.Nathan, message: "Apple transaction info parsed.", data: $"Apple transaction info: {appleTransactionInfo.JSON}."); // TODO remove when no longer needed
 
 			string transactionId = appleTransactionInfo.OriginalTransactionId;
+			Log.Warn(owner: Owner.Nathan, message: "Apple chargeback transactionId identified.", data: $"TransactionId: {transactionId}."); // TODO remove when no longer needed
 			
 			string accountId = _receiptService.GetAccountIdByOrderId(orderId: transactionId);
-			
-			Log.Warn(owner: Owner.Nathan, message: "Apple chargeback transactionId and accountId identified.", data: $"TransactionId: {transactionId}. AccountId: {accountId}."); // TODO remove when no longer needed
+			Log.Warn(owner: Owner.Nathan, message: "Apple chargeback accountId identified.", data: $"AccountId: {accountId}."); // TODO remove when no longer needed
 			
 			_apiService.BanPlayer(accountId);
 			Log.Warn(owner: Owner.Nathan, message: "Player banned for Apple chargeback.", data: $"AccountId: {accountId}."); // TODO remove when no longer needed
@@ -72,7 +75,7 @@ public class AppleChargebackController : PlatformController
 			);
 			_chargebackLogService.Create(chargebackLog);
 			
-			Log.Warn(owner: Owner.Nathan, message: "Chargeback log created for Apple chargeback.", data: $"Chargeback log: {chargebackLog}."); // TODO remove when no longer needed
+			Log.Warn(owner: Owner.Nathan, message: "Chargeback log created for Apple chargeback.", data: $"Chargeback log: {chargebackLog.JSON}."); // TODO remove when no longer needed
 
 			_slackMessageClient = new SlackMessageClient(
 		         channel: PlatformEnvironment.Require<string>(key: "slackChannel") ?? PlatformEnvironment.SlackLogChannel,
@@ -102,7 +105,7 @@ public class AppleChargebackController : PlatformController
 			_apiService.Alert(
 				title: "Error occurred when attempting to process Apple chargeback.",
 				message: "Error occurred when attempting to process Apple chargeback. Either there is an issue processing Apple's signed payload or there is a malicious actor",
-				countRequired: 10,
+				countRequired: 5,
 				timeframe: 300,
 				data: new RumbleJson
 				    {
