@@ -95,13 +95,9 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 				})
 				.Post(out GoogleAuthResponse authRes, out int authCode);
 
-			Log.Warn(owner: Owner.Nathan, message: $"Google token fetch response: {authRes}.");
-			
 			_authToken = authRes.AccessToken;
 			_tokenExpireTime += authRes.ExpiresIn;
 		}
-
-		Log.Warn(owner: Owner.Nathan, message: $"Google token: {_authToken}.");
 
 		// The default maximum number of purchases that appear is 1000. There is a nextPageToken that can be passed into further requests to view more results
 		// Results are shown from oldest to newest, with a default startTime of 30 days ago
