@@ -127,6 +127,8 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 
 		if (!code.Between(200, 299))
 		{
+			Log.Error(owner: Owner.Nathan, message: "Alert was supposed to be triggered for fetching voided purchases.", data: $"Code: {code}. Response: {res}");
+			
 			_apiService.Alert(
 				title: "Unable to fetch Google voided purchases.",
 				message: "Unable to fetch Google voided purchases. Google's API may be down.",
@@ -181,6 +183,8 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 
 			if (!code.Between(200, 299))
 			{
+				Log.Error(owner: Owner.Nathan, message: "Alert was supposed to be triggered for fetching voided purchases.", data: $"Code: {code}. Response: {nextRes}");
+				
 				_apiService.Alert(
 				                  title: "Unable to fetch Google voided purchases.",
 				                  message: "Unable to fetch Google voided purchases. Google's API may be down.",
