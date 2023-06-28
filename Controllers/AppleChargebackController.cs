@@ -35,25 +35,34 @@ public class AppleChargebackController : PlatformController
 		// signed JWS representations have a signature to validate with header's alg parameter
 		string signedPayload = Require<string>(key: "signedPayload");
 
+		Log.Warn(owner: Owner.Nathan, message: "Chargeback notification received from Apple.", data: $"Signed payload: {signedPayload}."); // TODO remove when no longer needed
+		
 		try
 		{
 			byte[] bufferPayload = Convert.FromBase64String(signedPayload);
 			string decodedPayload = Encoding.UTF8.GetString(bufferPayload);
 			AppleChargeback appleChargeback = ((RumbleJson) decodedPayload).ToModel<AppleChargeback>();
+			Log.Warn(owner: Owner.Nathan, message: "Apple chargeback payload decoded.", data: $"Decoded payload: {decodedPayload}. Apple chargeback: {appleChargeback}."); // TODO remove when no longer needed
 
 			byte[] bufferRenewalInfo = Convert.FromBase64String(appleChargeback.Data.JWSRenewalInfo);
 			string decodedRenewalInfo = Encoding.UTF8.GetString(bufferRenewalInfo);
 			AppleRenewalInfo appleRenewalInfo = ((RumbleJson) decodedRenewalInfo).ToModel<AppleRenewalInfo>(); // for subscriptions, not yet used
+			Log.Warn(owner: Owner.Nathan, message: "Apple renewal info decoded.", data: $"Decoded Apple renewal: {decodedRenewalInfo}. Apple renewal info: {appleRenewalInfo}."); // TODO remove when no longer needed
 			
 			byte[] bufferTransactionInfo = Convert.FromBase64String(appleChargeback.Data.JWSTransaction);
 			string decodedTransactionInfo = Encoding.UTF8.GetString(bufferTransactionInfo);
 			AppleTransactionInfo appleTransactionInfo = ((RumbleJson) decodedTransactionInfo).ToModel<AppleTransactionInfo>();
+			Log.Warn(owner: Owner.Nathan, message: "Apple transaction info decoded.", data: $"Decoded Apple transaction: {decodedTransactionInfo}. Apple transaction info: {appleTransactionInfo}."); // TODO remove when no longer needed
 
 			string transactionId = appleTransactionInfo.OriginalTransactionId;
 			
 			string accountId = _receiptService.GetAccountIdByOrderId(orderId: transactionId);
 			
+			Log.Warn(owner: Owner.Nathan, message: "Apple chargeback transactionId and accountId identified.", data: $"TransactionId: {transactionId}. AccountId: {accountId}."); // TODO remove when no longer needed
+			
 			_apiService.BanPlayer(accountId);
+			Log.Warn(owner: Owner.Nathan, message: "Player banned for Apple chargeback.", data: $"AccountId: {accountId}."); // TODO remove when no longer needed
+			
 			ChargebackLog chargebackLog = new ChargebackLog(
 				accountId: accountId,
 				orderId: transactionId,
@@ -62,6 +71,8 @@ public class AppleChargebackController : PlatformController
 				source: "Apple"
 			);
 			_chargebackLogService.Create(chargebackLog);
+			
+			Log.Warn(owner: Owner.Nathan, message: "Chargeback log created for Apple chargeback.", data: $"Chargeback log: {chargebackLog}."); // TODO remove when no longer needed
 
 			_slackMessageClient = new SlackMessageClient(
 		         channel: PlatformEnvironment.Require<string>(key: "slackChannel") ?? PlatformEnvironment.SlackLogChannel,
