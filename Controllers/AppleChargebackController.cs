@@ -39,7 +39,14 @@ public class AppleChargebackController : PlatformController
 		
 		try
 		{
-			byte[] bufferPayload = Convert.FromBase64String(signedPayload);
+			string[] split = signedPayload.Split(separator: ".");
+
+			string header = split[0];
+			string payload = split[1];
+			string signature = split[2];
+			
+		
+			byte[] bufferPayload = Convert.FromBase64String(payload);
 			string decodedPayload = Encoding.UTF8.GetString(bufferPayload);
 			Log.Warn(owner: Owner.Nathan, message: "Apple chargeback payload decoded.", data: $"Decoded payload: {decodedPayload}."); // TODO remove when no longer needed
 			AppleChargeback appleChargeback = ((RumbleJson) decodedPayload).ToModel<AppleChargeback>();
