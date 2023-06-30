@@ -31,11 +31,14 @@ public class AppleChargebackController : PlatformController
 	[HttpPost, Route(template: ""), NoAuth]
 	public ObjectResult ChargebackApple()
 	{
+		// TODO look into different notification type handling, especially when we start dealing with subscriptions--there may be more complications to handle
+		// TODO https://developer.apple.com/documentation/appstoreservernotifications/notificationtype
+		
 		// base64 url decode to get decodedpayload - contains notificationType, subtype, metadata, data/summary
 		// data contains signedTransactionInfo(JWSTransaction) to be base64 url decode for transaction details
 		// signed JWS representations have a signature to validate with header's alg parameter
 		string signedPayload = Require<string>(key: "signedPayload");
-
+		
 		Log.Warn(owner: Owner.Nathan, message: "Chargeback notification received from Apple.", data: $"Signed payload: {signedPayload}."); // TODO remove when no longer needed
 		
 		try
@@ -65,8 +68,7 @@ public class AppleChargebackController : PlatformController
 				AppleRenewalInfo appleRenewalInfo = ((RumbleJson) decodedRenewalInfo).ToModel<AppleRenewalInfo>();
 				
 				// TODO implement handling when/if we add in subscriptions
-				
-				Log.Error(owner: Owner.Nathan, message: "A chargeback was detected for a subscription. This is not expected and thus automatic handling is not yet implemented.", data: $"Renewal info: {appleRenewalInfo}.");
+				Log.Error(owner: Owner.Nathan, message: "A chargeback was detected for a subscription. This is not expected and thus automatic handling is not yet implemented.", data: $"Apple Notification: {appleChargeback}. Renewal info: {appleRenewalInfo}.");
 				_apiService.Alert(
 					title: "A chargeback was detected for a subscription.",
 					message: "A chargeback was detected for a subscription. This is not expected and thus automatic handling is not yet implemented.",
@@ -74,66 +76,70 @@ public class AppleChargebackController : PlatformController
 					timeframe: 300,
 					data: new RumbleJson
 					{
+						{ "Apple Notification", appleChargeback },
 						{ "Renewal Info", appleRenewalInfo }
 					} ,
 					owner: Owner.Nathan
 				);
 			}
 
-			if (appleChargeback.Data.JWSTransaction != null)
+			if (appleChargeback.NotificationType == "REFUND")
 			{
-				string[] transactionSplit = appleChargeback.Data.JWSTransaction.Split(separator: ".");
+				if (appleChargeback.Data.JWSTransaction != null)
+				{
+					string[] transactionSplit = appleChargeback.Data.JWSTransaction.Split(separator: ".");
 
-				string transactionHeader = transactionSplit[0];
-				string transactionPayload = transactionSplit[1];
-				string transactionSignature = transactionSplit[2];
+					string transactionHeader = transactionSplit[0];
+					string transactionPayload = transactionSplit[1];
+					string transactionSignature = transactionSplit[2];
 
-				byte[] bufferTransactionInfo = DecodeUrlBase64.Decode(transactionPayload);
-				string decodedTransactionInfo = Encoding.UTF8.GetString(bufferTransactionInfo);
-				Log.Warn(owner: Owner.Nathan, message: "Apple transaction info decoded.", data: $"Decoded Apple transaction: {decodedTransactionInfo}."); // TODO remove when no longer needed
-				AppleTransactionInfo appleTransactionInfo = ((RumbleJson) decodedTransactionInfo).ToModel<AppleTransactionInfo>();
-				Log.Warn(owner: Owner.Nathan, message: "Apple transaction info parsed.", data: $"Apple transaction info: {appleTransactionInfo.JSON}."); // TODO remove when no longer needed
+					byte[] bufferTransactionInfo = DecodeUrlBase64.Decode(transactionPayload);
+					string decodedTransactionInfo = Encoding.UTF8.GetString(bufferTransactionInfo);
+					Log.Warn(owner: Owner.Nathan, message: "Apple transaction info decoded.", data: $"Decoded Apple transaction: {decodedTransactionInfo}."); // TODO remove when no longer needed
+					AppleTransactionInfo appleTransactionInfo = ((RumbleJson) decodedTransactionInfo).ToModel<AppleTransactionInfo>();
+					Log.Warn(owner: Owner.Nathan, message: "Apple transaction info parsed.", data: $"Apple transaction info: {appleTransactionInfo.JSON}."); // TODO remove when no longer needed
 
-				string transactionId = appleTransactionInfo.OriginalTransactionId;
-				Log.Warn(owner: Owner.Nathan, message: "Apple chargeback transactionId identified.", data: $"TransactionId: {transactionId}."); // TODO remove when no longer needed
+					string transactionId = appleTransactionInfo.OriginalTransactionId;
+					Log.Warn(owner: Owner.Nathan, message: "Apple chargeback transactionId identified.", data: $"TransactionId: {transactionId}."); // TODO remove when no longer needed
 
-				string accountId = _receiptService.GetAccountIdByOrderId(orderId: transactionId);
-				Log.Warn(owner: Owner.Nathan, message: "Apple chargeback accountId identified.", data: $"AccountId: {accountId}."); // TODO remove when no longer needed
+					string accountId = _receiptService.GetAccountIdByOrderId(orderId: transactionId);
+					Log.Warn(owner: Owner.Nathan, message: "Apple chargeback accountId identified.", data: $"AccountId: {accountId}."); // TODO remove when no longer needed
 
-				_apiService.BanPlayer(accountId);
-				Log.Warn(owner: Owner.Nathan, message: "Player banned for Apple chargeback.", data: $"AccountId: {accountId}."); // TODO remove when no longer needed
+					_apiService.BanPlayer(accountId);
+					Log.Warn(owner: Owner.Nathan, message: "Player banned for Apple chargeback.", data: $"AccountId: {accountId}."); // TODO remove when no longer needed
 
-				ChargebackLog chargebackLog = new ChargebackLog(
-	                accountId: accountId,
-	                orderId: transactionId,
-	                voidedTimestamp: appleTransactionInfo.RevocationDate,
-	                reason: appleTransactionInfo.RevocationReason.ToString(),
-	                source: "Apple"
-				);
-				_chargebackLogService.Create(chargebackLog);
+					ChargebackLog chargebackLog = new ChargebackLog(
+		                accountId: accountId,
+		                orderId: transactionId,
+		                voidedTimestamp: appleTransactionInfo.RevocationDate,
+		                reason: appleTransactionInfo.RevocationReason.ToString(),
+		                source: "Apple"
+					);
+					_chargebackLogService.Create(chargebackLog);
 
-				Log.Warn(owner: Owner.Nathan, message: "Chargeback log created for Apple chargeback.", data: $"Chargeback log: {chargebackLog.JSON}."); // TODO remove when no longer needed
+					Log.Warn(owner: Owner.Nathan, message: "Chargeback log created for Apple chargeback.", data: $"Chargeback log: {chargebackLog.JSON}."); // TODO remove when no longer needed
 
-				_slackMessageClient = new SlackMessageClient(
-					channel: PlatformEnvironment.Require<string>(key: "slackChannel") ?? PlatformEnvironment.SlackLogChannel,
-					token: PlatformEnvironment.SlackLogBotToken
-                );
+					_slackMessageClient = new SlackMessageClient(
+						channel: PlatformEnvironment.Require<string>(key: "slackChannel") ?? PlatformEnvironment.SlackLogChannel,
+						token: PlatformEnvironment.SlackLogBotToken
+	                );
 
-				List<SlackBlock> slackHeaders = new List<SlackBlock>()
-                {
-                    new(SlackBlock.BlockType.HEADER, $"{PlatformEnvironment.Deployment} | Chargeback Banned Player | {DateTime.Now:yyyy.MM.dd HH:mm}"),
-                    new($"*Banned Player*: {accountId}\n*Source*: Apple\n*Owners:* {string.Join(", ", _slackMessageClient.UserSearch(Owner.Nathan).Select(user => user.Tag))}"),
-                    new(SlackBlock.BlockType.DIVIDER)
-                };
-				List<SlackBlock> slackBlocks = new List<SlackBlock>();
-				slackBlocks.Add(new SlackBlock(text: $"*AccountId*: {accountId}\n*TransactionId*: {transactionId}\n*Voided Timestamp*: {appleTransactionInfo.RevocationDate}\n*Reason*: {appleTransactionInfo.RevocationReason.ToString()}\n*Source*: Apple"));
+					List<SlackBlock> slackHeaders = new List<SlackBlock>()
+	                {
+	                    new(SlackBlock.BlockType.HEADER, $"{PlatformEnvironment.Deployment} | Chargeback Banned Player | {DateTime.Now:yyyy.MM.dd HH:mm}"),
+	                    new($"*Banned Player*: {accountId}\n*Source*: Apple\n*Owners:* {string.Join(", ", _slackMessageClient.UserSearch(Owner.Nathan).Select(user => user.Tag))}"),
+	                    new(SlackBlock.BlockType.DIVIDER)
+	                };
+					List<SlackBlock> slackBlocks = new List<SlackBlock>();
+					slackBlocks.Add(new SlackBlock(text: $"*AccountId*: {accountId}\n*TransactionId*: {transactionId}\n*Voided Timestamp*: {appleTransactionInfo.RevocationDate}\n*Reason*: {appleTransactionInfo.RevocationReason.ToString()}\n*Source*: Apple"));
 
-				SlackMessage slackMessage = new SlackMessage(
-					blocks: slackHeaders,
-					attachments: new SlackAttachment("#2eb886", slackBlocks)
-                );
+					SlackMessage slackMessage = new SlackMessage(
+						blocks: slackHeaders,
+						attachments: new SlackAttachment("#2eb886", slackBlocks)
+	                );
 
-				_slackMessageClient.Send(message: slackMessage);
+					_slackMessageClient.Send(message: slackMessage);
+				}
 			}
 			
 			return Ok();
