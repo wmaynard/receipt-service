@@ -25,7 +25,7 @@ public class AppleData : PlatformDataModel
 	
 	[BsonElement(DB_KEY_APP_APPLE_ID)]
 	[JsonInclude, JsonPropertyName(FRIENDLY_KEY_APP_APPLE_ID)]
-	public string AppAppleId { get; set; } // int64 on apple's side
+	public long AppAppleId { get; set; } // int64 on apple's side
 	
 	[BsonElement(DB_KEY_BUNDLE_ID)]
 	[JsonInclude, JsonPropertyName(FRIENDLY_KEY_BUNDLE_ID)]

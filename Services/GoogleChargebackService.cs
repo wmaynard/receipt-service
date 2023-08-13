@@ -22,19 +22,20 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 	private readonly DynamicConfig        _dynamicConfig;
 	private readonly ChargebackLogService _chargebackLogService;
 	private readonly ReceiptService       _receiptService;
-	private SlackMessageClient   _slackMessageClient;
+	private SlackMessageClient            _slackMessageClient;
 #pragma warning restore
-
-	public const int  CONFIG_TIME_BUFFER = 30_000; // time in ms between requests
-	public const int  CONFIG_MAX_RESULTS = 1_000; // defaults to 1000
-	public const int  CONFIG_TYPE        = 0;     // default 0: only voided iap, 1: voided iap and subscriptions
+	
+	public const int CONFIG_TIME_BUFFER          = 60_000; // time in ms between requests
+	public const int CONFIG_TIME_BUFFER_NON_PROD = 600_000; // time in ms between requests for non prod environments
+	public const int CONFIG_MAX_RESULTS          = 1_000; // defaults to 1000
+	public const int CONFIG_TYPE                 = 0;     // default 0: only voided iap, 1: voided iap and subscriptions
 
 	private string _nextPageToken = null; // used if over maximum results
 	private long _tokenExpireTime = UnixTime; // in seconds, used for fetching a new auth token when previous expires
 	private long _startTime = UnixTimeMS - 86_400_000; // in milliseconds, start time of requested voided purchases, set to start a day before to cover downtime. to be updated every pass
 	private string _authToken = null;
 	
-	public GoogleChargebackService() : base(collection: "chargebacks", primaryNodeTaskCount: 10, secondaryNodeTaskCount: 0, intervalMs: CONFIG_TIME_BUFFER) { }
+	public GoogleChargebackService() : base(collection: "chargebacks", primaryNodeTaskCount: 10, secondaryNodeTaskCount: 0, intervalMs: PlatformEnvironment.IsProd ? CONFIG_TIME_BUFFER : CONFIG_TIME_BUFFER_NON_PROD) { }
 	
 	protected override void OnTasksCompleted(ChargebackData[] data)
 	{
@@ -51,18 +52,18 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 		if (UnixTime >= _tokenExpireTime || _authToken == null) // when auth token is expired, fetch new one
 		{
 			RumbleJson headerJson = new RumbleJson
-			                        {
-				                        { "typ", "JWT" }
-			                        };
+            {
+                { "typ", "JWT" }
+            };
 
 			RumbleJson claimsJson = new RumbleJson
-			                        {
-				                        { "iss", PlatformEnvironment.Require<string>(key: "googleServiceAccountClientEmail") },
-				                        { "scope", "https://www.googleapis.com/auth/androidpublisher" },
-				                        { "aud", "https://oauth2.googleapis.com/token" }, // always the same
-				                        { "exp", UnixTime + 3_600 }, // in seconds, one hour expiration time -- maximum is one hour
-				                        { "iat", UnixTime } // in seconds
-			                        };
+	        {
+	            { "iss", PlatformEnvironment.Require<string>(key: "googleServiceAccountClientEmail") },
+	            { "scope", "https://www.googleapis.com/auth/androidpublisher" },
+	            { "aud", "https://oauth2.googleapis.com/token" }, // always the same
+	            { "exp", UnixTime + 3_600 }, // in seconds, one hour expiration time -- maximum is one hour
+	            { "iat", UnixTime } // in seconds
+	        };
 
 			string privateKey = PlatformEnvironment.Require<string>(key: "googleServiceAccountPrivateKey");
 
@@ -104,11 +105,11 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 		// Google limits to 6000 queries a day, and 30 queries in any 30 second period
 
 		RumbleJson parameters = new RumbleJson
-		                        {
-									{ "startTime", _startTime },
-									{ "maxResults", CONFIG_MAX_RESULTS },
-									{ "type", CONFIG_TYPE }
-								};
+        {
+			{ "startTime", _startTime },
+			{ "maxResults", CONFIG_MAX_RESULTS },
+			{ "type", CONFIG_TYPE }
+		};
 		
 		_apiService
 			// url with package name in dynamic config
@@ -135,9 +136,9 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 				countRequired: 10,
 				timeframe: 300,
 				data: new RumbleJson
-				      {
-					      { "code", code }
-				      } ,
+					{
+						{ "code", code }
+					} ,
 				owner: Owner.Nathan
 			);
 		}
@@ -173,29 +174,29 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 				.AddAuthorization(_authToken)
 				.AddParameters(parameters)
 				.OnFailure(response =>
-	            {
-		            Log.Error(Owner.Nathan, message: "Unable to fetch Google voided purchases.", data: new
-	                {
+				{
+					Log.Error(Owner.Nathan, message: "Unable to fetch Google voided purchases.", data: new
+					{
 						Response = response.AsRumbleJson
-	                });
-	            })
+					});
+				})
 				.Get(out RumbleJson nextRes, out int nextCode);
 
 			if (!code.Between(200, 299))
 			{
-				Log.Error(owner: Owner.Nathan, message: "Alert was supposed to be triggered for fetching voided purchases.", data: $"Code: {code}. Response: {nextRes}");
+				Log.Error(owner: Owner.Nathan, message: "Alert was supposed to be triggered for fetching voided purchases.", data: $"Code: {code}. Response: {nextRes}"); // TODO remove when no longer needed
 				
 				_apiService.Alert(
-				                  title: "Unable to fetch Google voided purchases.",
-				                  message: "Unable to fetch Google voided purchases. Google's API may be down.",
-				                  countRequired: 10,
-				                  timeframe: 300,
-				                  data: new RumbleJson
-				                        {
-					                        { "code", nextCode }
-				                        } ,
-				                  owner: Owner.Nathan
-				                 );
+					title: "Unable to fetch Google voided purchases.",
+					message: "Unable to fetch Google voided purchases. Google's API may be down.",
+					countRequired: 10,
+					timeframe: 300,
+					data: new RumbleJson
+					    {
+					        { "code", nextCode }
+					    } ,
+					owner: Owner.Nathan
+				);
 			}
 
 			if (nextRes.Optional<List<ChargebackData>>(key: "voidedPurchases") != null)
@@ -204,7 +205,7 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 				{
 					if (_chargebackLogService.Find(log => log.OrderId == data.OrderId).FirstOrDefault() == null && _receiptService.Find(receipt => receipt.OrderId == data.OrderId).FirstOrDefault() != null)
 					{
-							CreateTask(data);
+						CreateTask(data);
 					}
 				}
 			}
@@ -242,16 +243,13 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 			_chargebackLogService.Create(chargebackLog);
 
 			_slackMessageClient = new SlackMessageClient(
-				channel:
-				PlatformEnvironment.Require<string>(key: "slackChannel") ??
-				PlatformEnvironment.SlackLogChannel,
+				channel: PlatformEnvironment.Require<string>(key: "slackChannel") ?? PlatformEnvironment.SlackLogChannel,
 				token: PlatformEnvironment.SlackLogBotToken
             );
 
 			List<SlackBlock> slackHeaders = new List<SlackBlock>()
             {
-                new(SlackBlock.BlockType.HEADER,
-                    $"{PlatformEnvironment.Deployment} | Chargeback Banned Player | {DateTime.Now:yyyy.MM.dd HH:mm}"),
+                new(SlackBlock.BlockType.HEADER, $"{PlatformEnvironment.Deployment} | Chargeback Banned Player | {DateTime.Now:yyyy.MM.dd HH:mm}"),
                 new($"*Banned Player*: {accountId}\n*Source*: Google\n*Owners:* {string.Join(", ", _slackMessageClient.UserSearch(Owner.Nathan).Select(user => user.Tag))}"),
                 new(SlackBlock.BlockType.DIVIDER)
             };
