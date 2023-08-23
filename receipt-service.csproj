@@ -12,7 +12,7 @@
       <PackageReference Include="BouncyCastle" Version="1.8.9" />
       <PackageReference Include="JWT" Version="10.0.2" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-      <PackageReference Include="platform-csharp-common" Version="1.3.82" />
+      <PackageReference Include="platform-csharp-common" Version="1.3.72" />
       <PackageReference Include="StackExchange.Redis" Version="2.2.88" />
     </ItemGroup>
 
