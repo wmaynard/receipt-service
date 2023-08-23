@@ -133,7 +133,7 @@ build_image:
   stage: build
   allow_failure: false
   image:
-    name: gcr.io/kaniko-project/executor:v1.13.0-debug
+    name: "$KANIKO_IMAGE"
     entrypoint: [""]
   script:
     - mkdir -p /kaniko/.docker
