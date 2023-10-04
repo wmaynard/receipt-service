@@ -194,7 +194,7 @@ Timestamp (ms): {data.VoidedTimeMillis}
 
 		if (!string.IsNullOrWhiteSpace(accountId))
 		{
-			_apiService.BanPlayer(accountId);
+			_apiService.BanPlayer(accountId, reason: "GPG chargeback");
 			SendNotification(accountId, data);
 		}
 		else

@@ -105,7 +105,7 @@ public class AppleChargebackController : PlatformController
 					string accountId = _receiptService.GetAccountIdByOrderId(orderId: transactionId);
 					Log.Warn(owner: Owner.Nathan, message: "Apple chargeback accountId identified.", data: $"AccountId: {accountId}."); // TODO remove when no longer needed
 
-					_apiService.BanPlayer(accountId);
+					_apiService.BanPlayer(accountId, reason: "iOS chargeback");
 					Log.Warn(owner: Owner.Nathan, message: "Player banned for Apple chargeback.", data: $"AccountId: {accountId}."); // TODO remove when no longer needed
 
 					ChargebackLog chargebackLog = new ChargebackLog(
