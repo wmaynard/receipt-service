@@ -1,14 +1,29 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using MongoDB.Driver;
 using Rumble.Platform.Common.Services;
 using Rumble.Platform.ReceiptService.Models;
+using Rumble.Platform.ReceiptService.Models.Chargebacks;
 
 namespace Rumble.Platform.ReceiptService.Services;
 
 public class ReceiptService : PlatformMongoService<Receipt>
 {
     public ReceiptService() : base(collection: "receipts") {  }
+    
+    public string[] RemoveExistingIdsFrom(params string[] orderIds)
+    {
+	    if (orderIds == null || !orderIds.Any())
+		    return Array.Empty<string>();
+		
+	    string[] existing = _collection
+		    .Find(Builders<Receipt>.Filter.In(log => log.OrderId, orderIds))
+		    .Project(Builders<Receipt>.Projection.Expression(log => log.OrderId))
+		    .ToList()
+		    .ToArray();
+	    return orderIds.Except(existing).ToArray();
+    }
   
 	// Fetches receipts that match an accountId
 	public List<Receipt> GetByAccount(string accountId)
@@ -27,8 +42,8 @@ public class ReceiptService : PlatformMongoService<Receipt>
     }
   
 	// Fetches accountId that match an orderId
-	public string GetAccountIdByOrderId(string orderId)
-	{
-		return _collection.Find(filter: receipt => receipt.OrderId == orderId).FirstOrDefault().AccountId;
-	}
+	public string GetAccountIdByOrderId(string orderId) => _collection
+		.Find(Builders<Receipt>.Filter.Eq(receipt => receipt.OrderId, orderId))
+		.FirstOrDefault()
+		?.AccountId;
 }

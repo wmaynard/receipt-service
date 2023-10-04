@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using MongoDB.Driver;
@@ -10,6 +11,19 @@ namespace Rumble.Platform.ReceiptService.Services;
 public class ChargebackLogService : PlatformMongoService<ChargebackLog>
 {
 	public ChargebackLogService() : base(collection: "chargebackLogs") {  }
+
+	public string[] RemoveExistingIdsFrom(params string[] orderIds)
+	{
+		if (orderIds == null || !orderIds.Any())
+			return Array.Empty<string>();
+		
+		string[] existing = _collection
+			.Find(Builders<ChargebackLog>.Filter.In(log => log.OrderId, orderIds))
+			.Project(Builders<ChargebackLog>.Projection.Expression(log => log.OrderId))
+			.ToList()
+			.ToArray();
+		return orderIds.Except(existing).ToArray();
+	}
 	
 	// Fetch logs
 	public List<ChargebackLog> GetLogs(bool unbanned)
