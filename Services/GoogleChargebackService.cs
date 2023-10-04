@@ -39,18 +39,16 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 	public GoogleChargebackService() : base(collection: "chargebacks", primaryNodeTaskCount: 10, secondaryNodeTaskCount: 0, intervalMs: PlatformEnvironment.IsProd ? CONFIG_TIME_BUFFER : CONFIG_TIME_BUFFER_NON_PROD)
 	{
 		_slackMessageClient = new SlackMessageClient(
-			// channel: PlatformEnvironment.Optional<string>(key: "slackChannel") ?? PlatformEnvironment.SlackLogChannel,
-			channel: "C02C18NDJKY",
+			channel: PlatformEnvironment.Optional<string>(key: "slackChannel") ?? PlatformEnvironment.SlackLogChannel,
 			token: PlatformEnvironment.SlackLogBotToken
 		);
 	}
 	
-	protected override void OnTasksCompleted(ChargebackData[] data)
-	{
-		int processedCount = data.Length;
-		
-		Log.Info(owner: Owner.Nathan, message: "Google chargebacks processed.", data: $"Processed count: {processedCount}.");
-	}
+	protected override void OnTasksCompleted(ChargebackData[] data) =>
+		Log.Info(owner: Owner.Nathan, message: "Google chargebacks processed.", data: new
+		{
+			ProcessedCount = data.Length
+		});
 
 	/// <summary>
 	/// when auth token is expired, fetch new one
@@ -147,7 +145,13 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 				.Select(chargeback => chargeback.OrderId)
 				.ToArray();
 			newIds = _chargebackLogService.RemoveExistingIdsFrom(newIds);
-			newIds = _receiptService.RemoveExistingIdsFrom(newIds);
+			
+			if (newIds.Any())
+				Log.Info(Owner.Will, "Found new GPG chargebacks to process.", data: new
+				{
+					newIdCount = newIds.Length,
+					chargebackLogCount = chargebacks.Count
+				});
 
 			chargebacks
 				.Where(chargeback => newIds.Contains(chargeback.OrderId))
@@ -196,6 +200,11 @@ Timestamp (ms): {data.VoidedTimeMillis}
 		{
 			_apiService.BanPlayer(accountId, reason: "GPG chargeback");
 			SendNotification(accountId, data);
+			Log.Info(Owner.Will, "Chargeback processed, player banned", data: new
+			{
+				ChargebackData = data,
+				AccountId = accountId
+			});
 		}
 		else
 			Log.Local(Owner.Will, $"Account ID was null, otherwise I'd notify someone of chargeback {data.OrderId}.", emphasis: Log.LogType.ERROR);
