@@ -27,7 +27,7 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 #pragma warning restore
 	
 	public const int CONFIG_TIME_BUFFER          = 60_000; // time in ms between requests
-	public const int CONFIG_TIME_BUFFER_NON_PROD = 600_0; // time in ms between requests for non prod environments
+	public const int CONFIG_TIME_BUFFER_NON_PROD = 600_000; // time in ms between requests for non prod environments
 	public const int CONFIG_MAX_RESULTS          = 1_000; // defaults to 1000
 	public const int CONFIG_TYPE                 = 0;     // default 0: only voided iap, 1: voided iap and subscriptions
 
