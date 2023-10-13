@@ -32,16 +32,9 @@ public class TopController : PlatformController
         string game = Require<string>(key: "game");
         
         if (game != PlatformEnvironment.GameSecret)
-        {
             throw new PlatformException("Incorrect game key.", code: ErrorCode.Unauthorized);
-        }
 
-        bool loadTest = false;
-        
-        if (PlatformEnvironment.IsLocal || PlatformEnvironment.IsDev)
-        {
-            loadTest = Optional<bool>(key: "loadTest");
-        }
+        bool loadTest = !PlatformEnvironment.IsProd && Optional<bool>("loadTest");
 
         switch (channel)
         {
@@ -50,29 +43,25 @@ public class TopController : PlatformController
                 Receipt receipt = Require<Receipt>(key: "receipt");
                 RumbleJson receiptData = Require<RumbleJson>(key: "receipt"); // for android fallback to verify raw data
                 
-                if (signature == null)
-                {
-                    throw new ReceiptException(receipt,
-                                               "Receipt called with 'aos' as the channel without a signature. 'aos' receipts require a signature");
-                }
+                if (string.IsNullOrWhiteSpace(signature))
+                    throw new ReceiptException(receipt, "Receipt called with 'aos' as the channel without a signature. 'aos' receipts require a signature");
                 VerificationResult validated = ValidateAndroid(receipt, accountId, signature, receiptData, loadTest);
                 return Ok(new RumbleJson
-                          {
-                              {"success", validated.Status},
-                              {"receipt", validated.Response}
-                          });
+                {
+                    { "success", validated.Status },
+                    { "receipt", validated.Response }
+                });
             case "ios":
                 string appleReceipt = Require<string>(key: "receipt");
                 string transactionId = Require<string>(key: "transactionId");
                 AppleVerificationResult appleValidated = ValidateApple(appleReceipt, accountId, transactionId, loadTest);
                 return Ok(new RumbleJson
-                          {
-                              {"success", appleValidated.Status},
-                              {"receipt", appleValidated.Response?.InApp.Find(inApp => inApp.TransactionId == transactionId)}
-                          });
+                {
+                    { "success", appleValidated.Status },
+                    { "receipt", appleValidated.Response?.InApp.Find(inApp => inApp.TransactionId == transactionId) }
+                });
             default:
-                throw
-                    new PlatformException(message: "Receipt called with invalid channel.  Please use 'ios' or 'aos'.");
+                throw new PlatformException("Receipt called with invalid channel.  Please use 'ios' or 'aos'.");
         }
     }
 
@@ -90,78 +79,59 @@ public class TopController : PlatformController
         // json receipt (json) of receipt sent for verification
         // int status (0, status code) 0 if valid, status code if error; see https://developer.apple.com/documentation/appstorereceipts/status for status codes
         
-        switch (output?.Status)
+        if (output?.Status == null)
+            throw new AppleReceiptException(receipt, "Error occurred while trying to validate Apple receipt.");
+        
+        switch (output.Status)
         {
-            case null:
-                throw new AppleReceiptException(receipt, message: "Error occurred while trying to validate Apple receipt.");
             case AppleVerificationResult.SuccessStatus.False:
-                Log.Error(owner: Owner.Nathan, message: "Failed to validate Apple receipt. Order does not exist.", data: $"Account ID: {accountId}");
+                Log.Error(owner: Owner.Will, "Failed to validate Apple receipt. Order does not exist.", data: new
+                {
+                    AccountId = accountId
+                });
                 break;
             case AppleVerificationResult.SuccessStatus.DuplicatedFail:
-                Log.Error(owner: Owner.Nathan, message: "Duplicate Apple receipt processed with a different account ID. Potential malicious actor.", data: $"Account ID: {accountId}");
-                
                 _apiService.Alert(
                     title: "Duplicate Apple receipt processed with a different account ID.",
                     message: "Duplicate Apple receipt processed with a different account ID. Potential malicious actor.",
                     countRequired: 1,
                     timeframe: 300,
                     data: new RumbleJson
-                        {
-                            { "Account ID", accountId }
-                        } 
-                );
-                
-                break;
-            case AppleVerificationResult.SuccessStatus.Duplicated:
-                if (loadTest)
-                {
-                    Receipt loadTestReceipt = new Receipt();
-
-                    loadTestReceipt.AccountId = accountId;
-                    loadTestReceipt.OrderId = output.TransactionId;
-                    loadTestReceipt.PackageName = output.Response.BundleId;
-                    loadTestReceipt.ProductId = output.Response.InApp[0].ProductId;
-                    loadTestReceipt.PurchaseTime = output.Timestamp;
-                    loadTestReceipt.PurchaseState = 0;
-                    string loadTestQuantity = output.Response.InApp.Find(inApp => inApp.TransactionId == transactionId)
-                                            ?.Quantity;
-                    if (loadTestQuantity != null)
                     {
-                        loadTestReceipt.Quantity =
-                            Int32.Parse(loadTestQuantity);
-                    }
-
-                    loadTestReceipt.Acknowledged = false;
-
-                    _receiptService.Create(loadTestReceipt);
-                }
-                else
-                {
-                    Log.Warn(owner: Owner.Nathan, message: "Duplicate Apple receipt processed with the same account ID.", data: $"Request account ID: {accountId}. Receipt: {receipt}.");
-                }
+                        { "Account ID", accountId }
+                    } 
+                );
                 break;
+            case AppleVerificationResult.SuccessStatus.Duplicated when loadTest:
             case AppleVerificationResult.SuccessStatus.True:
-                Log.Info(owner: Owner.Nathan, message: "Successful Apple receipt processed.", data: $"Account ID: {accountId}. Receipt: {output.Response}");
-
-                Receipt newReceipt = new Receipt();
-
-                newReceipt.AccountId = accountId;
-                newReceipt.OrderId = output.TransactionId;
-                newReceipt.PackageName = output.Response.BundleId;
-                newReceipt.ProductId = output.Response.InApp[0].ProductId;
-                newReceipt.PurchaseTime = output.Timestamp;
-                newReceipt.PurchaseState = 0;
-                string quantity = output.Response.InApp.Find(inApp => inApp.TransactionId == transactionId)
-                                        ?.Quantity;
-                if (quantity != null)
+                Log.Info(Owner.Will, "Successful Apple receipt processed.", data: new
                 {
-                    newReceipt.Quantity =
-                        Int32.Parse(quantity);
-                }
-
-                newReceipt.Acknowledged = false;
+                    AccountId = accountId,
+                    Receipt = receipt
+                });
+                
+                Receipt newReceipt = new()
+                {
+                    AccountId = accountId,
+                    OrderId = output.TransactionId,
+                    PackageName = output.Response.BundleId,
+                    ProductId = output.Response.InApp[0].ProductId,
+                    PurchaseTime = output.Timestamp,
+                    PurchaseState = 0,
+                    Acknowledged = false
+                };
+                string quantity = output.Response.InApp.Find(inApp => inApp.TransactionId == transactionId)?.Quantity;
+                if (!string.IsNullOrWhiteSpace(quantity))
+                    newReceipt.Quantity = int.Parse(quantity);
 
                 _receiptService.Create(newReceipt);
+                break;
+            case AppleVerificationResult.SuccessStatus.Duplicated:
+                Log.Warn(Owner.Will, "Duplicate Apple receipt processed with the same account ID.", data: new
+                {
+                    AccountId = accountId,
+                    Receipt = receipt
+                });
                 break;
         }
 
@@ -182,48 +152,48 @@ public class TopController : PlatformController
         //     .Request($"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{receipt.PackageName}/purchases/products/{receipt.ProductId}/tokens/{receipt.PurchaseToken}")
         //     .OnFailure(response => Log.Local(Owner.Will, response.AsGenericData.JSON, emphasis: Log.LogType.ERROR))
         //     .Get(out GenericData json, out int code);
-        VerificationResult output = _googleService.VerifyGoogle(receipt: receipt, signature: signature, receiptData: receiptData, accountId: accountId);
+        VerificationResult output = _googleService.VerifyGoogle(receipt, signature, receiptData, accountId);
+        receipt.AccountId = accountId;
+        
+        if (output?.Status == null)
+            throw new ReceiptException(receipt, message: "Error occurred while trying to validate Google receipt.");
 
-        switch (output?.Status)
+        switch (output.Status)
         {
-            case null:
-                throw new ReceiptException(receipt: receipt, message: "Error occurred while trying to validate Google receipt.");
             case VerificationResult.SuccessStatus.False:
-                Log.Error(owner: Owner.Nathan, message: "Failed to validate Google receipt. Order does not exist.", data: $"Account ID: {accountId}");
+                Log.Error(Owner.Will, "Failed to validate Google receipt. Order does not exist.", data: new
+                {
+                    AccountId = accountId
+                });
                 break;
             case VerificationResult.SuccessStatus.DuplicatedFail:
-                Log.Error(owner: Owner.Nathan, message: "Duplicate Google receipt processed with a different account ID.", data: $"Account ID: {accountId}");
-                
                 _apiService.Alert(
                     title: "Duplicate Apple receipt processed with a different account ID.",
                     message: "Duplicate Apple receipt processed with a different account ID. Potential malicious actor.",
                     countRequired: 1,
                     timeframe: 300,
                     data: new RumbleJson
-                        {
-                            { "Account ID", accountId }
-                        } 
+                    {
+                        { "Account ID", accountId }
+                    } 
                 );
-                
                 break;
-            case VerificationResult.SuccessStatus.Duplicated:
-                if (loadTest)
-                {
-                    receipt.AccountId = accountId;
-
-                    _googleService.Create(receipt);
-                }
-                else
-                {
-                    Log.Warn(owner: Owner.Nathan, message: "Duplicate Google receipt processed with the same account ID.", data: $"Request account ID: {accountId}. Receipt: {receipt}.");
-                }
-                break;
+            case VerificationResult.SuccessStatus.Duplicated when loadTest:
             case VerificationResult.SuccessStatus.True:
-                Log.Info(owner: Owner.Nathan, message: "Successful Google receipt processed.", data: $"Request account ID: {accountId}. Receipt: {receipt}.");
-
-                receipt.AccountId = accountId;
+                Log.Info(Owner.Will, "Successful Google receipt processed.", data: new
+                {
+                    AccountId = accountId,
+                    Receipt = receipt
+                });
 
                 _googleService.Create(receipt);
+                break;
+            case VerificationResult.SuccessStatus.Duplicated:
+                Log.Warn(Owner.Will, "Duplicate Google receipt processed with the same account ID.", data: new
+                {
+                    AccountId = accountId,
+                    Receipt = receipt
+                });
                 break;
         }
 

@@ -11,6 +11,8 @@ namespace Rumble.Platform.ReceiptService.Services;
 public class ReceiptService : PlatformMongoService<Receipt>
 {
     public ReceiptService() : base(collection: "receipts") {  }
+
+    public bool Exists(string orderId) => _collection.CountDocuments(receipt => receipt.OrderId == orderId) > 0;
     
     public string[] RemoveExistingIdsFrom(params string[] orderIds)
     {

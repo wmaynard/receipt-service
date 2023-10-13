@@ -45,7 +45,7 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 	}
 	
 	protected override void OnTasksCompleted(ChargebackData[] data) =>
-		Log.Info(owner: Owner.Nathan, message: "Google chargebacks processed.", data: new
+		Log.Info(Owner.Will, "Google chargebacks processed.", data: new
 		{
 			ProcessedCount = data.Length
 		});
@@ -89,7 +89,7 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 			})
 			.OnFailure(response =>
 			{
-				Log.Error(Owner.Nathan, message: "Unable to fetch Google service account auth token.", data: new
+				Log.Error(Owner.Will, "Unable to fetch Google service account auth token.", data: new
 				{
 					Response = response
 				});
