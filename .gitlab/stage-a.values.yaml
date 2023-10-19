@@ -10,7 +10,7 @@ image:
   tag: stable
   pullPolicy: IfNotPresent
   # secrets:
-  #   - name: gitlab-registry
+#   - name: gitlab-registry
 extraLabels: {}
 lifecycle: {}
 # preStop:
@@ -25,7 +25,7 @@ application:
   tier: web
   migrateCommand:
   initializeCommand:
-  secretName: 
+  secretName:
   secretChecksum:
 hpa:
   enabled: false
@@ -55,9 +55,9 @@ service:
   internalPort: 8080
 ingress:
   enabled: true
-  paths: 
-    - "/commerce"
-    - "/admin/commerce"
+  paths:
+  - "/commerce"
+  - "/admin/commerce"
   tls:
     enabled: false
     acme: false
@@ -72,9 +72,9 @@ ingress:
     enabled: false
     secRuleEngine: "DetectionOnly"
     # secRules:
-    #   - variable: ""
-    #     operator: ""
-    #     action: ""
+  #   - variable: ""
+  #     operator: ""
+  #     action: ""
   canary:
     weight:
 prometheus:
@@ -100,12 +100,11 @@ startupProbe:
 postgresql:
   managed: false
   managedClassSelector:
-    #   matchLabels:
-    #     stack: gitlab (This is an example. The labels should match the labels on the CloudSQLInstanceClass)
+  #   matchLabels:
+  #     stack: gitlab (This is an example. The labels should match the labels on the CloudSQLInstanceClass)
 
 resources:
   limits:
-    cpu: 128m
     memory: 128Mi
   requests:
     cpu: 128m
@@ -151,34 +150,34 @@ serviceAccount:
   createNew: false
 
 workers: {}
-  # worker:
-  #   replicaCount: 1
-  #   terminationGracePeriodSeconds: 60
-  #   command:
-  #   - /bin/herokuish
-  #   - procfile
-  #   - start
-  #   - worker
-  #   nodeSelector: {}
-  #   tolerations: []
-  #   livenessProbe:
-  #     path: "/"
-  #     initialDelaySeconds: 15
-  #     timeoutSeconds: 15
-  #     scheme: "HTTP"
-  #     probeType: "httpGet"
-  #   readinessProbe:
-  #     path: "/"
-  #     initialDelaySeconds: 5
-  #     timeoutSeconds: 3
-  #     scheme: "HTTP"
-  #     probeType: "httpGet"
-  #   lifecycle:
-  #     preStop:
-  #       exec:
-  #         command: ["/bin/sh", "-c", "sleep 10"]
-  #   preStopCommand:
-  #   - /bin/herokuish
-  #   - procfile
-  #   - start
-  #   - stop_worker
+# worker:
+#   replicaCount: 1
+#   terminationGracePeriodSeconds: 60
+#   command:
+#   - /bin/herokuish
+#   - procfile
+#   - start
+#   - worker
+#   nodeSelector: {}
+#   tolerations: []
+#   livenessProbe:
+#     path: "/"
+#     initialDelaySeconds: 15
+#     timeoutSeconds: 15
+#     scheme: "HTTP"
+#     probeType: "httpGet"
+#   readinessProbe:
+#     path: "/"
+#     initialDelaySeconds: 5
+#     timeoutSeconds: 3
+#     scheme: "HTTP"
+#     probeType: "httpGet"
+#   lifecycle:
+#     preStop:
+#       exec:
+#         command: ["/bin/sh", "-c", "sleep 10"]
+#   preStopCommand:
+#   - /bin/herokuish
+#   - procfile
+#   - start
+#   - stop_worker
