@@ -55,14 +55,14 @@ public class ChargebackLog : PlatformCollectionDocument
 	[JsonInclude, JsonPropertyName(FRIENDLY_KEY_UNBANNED)]
 	public bool Unbanned { get; set; }
 	
-	public ChargebackLog(string accountId, string orderId, long voidedTimestamp, string reason, string source, bool unbanned = false)
-	{
-		AccountId = accountId;
-		OrderId = orderId;
-		VoidedTimestamp = voidedTimestamp;
-		Reason = reason;
-		Source = source;
-		Timestamp = Common.Utilities.Timestamp.UnixTime;
-		Unbanned = unbanned;
-	}
+	// public ChargebackLog(string accountId, string orderId, long voidedTimestamp, string reason, string source, bool unbanned = false)
+	// {
+	// 	AccountId = accountId;
+	// 	OrderId = orderId;
+	// 	VoidedTimestamp = voidedTimestamp;
+	// 	Reason = reason;
+	// 	Source = source;
+	// 	Timestamp = Common.Utilities.Timestamp.UnixTime;
+	// 	Unbanned = unbanned;
+	// }
 }

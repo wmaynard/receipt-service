@@ -208,16 +208,15 @@ Timestamp (ms): {data.VoidedTimeMillis}
 		}
 		else
 			Log.Local(Owner.Will, $"Account ID was null, otherwise I'd notify someone of chargeback {data.OrderId}.", emphasis: Log.LogType.ERROR);
-
-		accountId ??= "other env";
-
-		_chargebackLogService.Create(new ChargebackLog(
-			accountId: accountId,
-			orderId: orderId,
-			voidedTimestamp: data.VoidedTimeMillis,
-			reason: data.VoidedReason.ToString(),
-			source: data.VoidedSource.ToString()
-		));
+		
+		_chargebackLogService.Insert(new ChargebackLog
+		{
+			AccountId = accountId ?? "other env",
+			OrderId = orderId,
+			VoidedTimestamp = data.VoidedTimeMillis,
+			Reason = data.VoidedReason.ToString(),
+			Source = data.VoidedSource.ToString()
+		});
 	}
 
 	public class ChargebackData : PlatformDataModel // public because of accessibilty?

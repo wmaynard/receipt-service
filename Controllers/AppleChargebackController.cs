@@ -100,14 +100,14 @@ public class AppleChargebackController : PlatformController
 
 				_apiService.BanPlayer(accountId, reason: "iOS chargeback");
 
-				ChargebackLog chargebackLog = new ChargebackLog(
-	                accountId: accountId,
-	                orderId: transactionId,
-	                voidedTimestamp: appleTransactionInfo.RevocationDate,
-	                reason: appleTransactionInfo.RevocationReason.ToString(),
-	                source: "Apple"
-				);
-				_chargebackLogService.Create(chargebackLog);
+				_chargebackLogService.Insert(new ChargebackLog
+				{
+					AccountId = accountId ?? "other env",
+					OrderId = transactionId,
+					VoidedTimestamp = appleTransactionInfo.RevocationDate,
+					Reason = appleTransactionInfo.RevocationReason.ToString(),
+					Source = "Apple"
+				});
 
 				_slackMessageClient = new SlackMessageClient(
 					channel: PlatformEnvironment.Require<string>(key: "slackChannel") ?? PlatformEnvironment.SlackLogChannel,
