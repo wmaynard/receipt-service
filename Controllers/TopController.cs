@@ -17,10 +17,9 @@ namespace Rumble.Platform.ReceiptService.Controllers;
 public class TopController : PlatformController
 {
 #pragma warning disable
-    private readonly AppleService            _appleService;
     private readonly Services.ReceiptService _receiptService;
-    private readonly GoogleService           _googleService;
     private readonly ForcedValidationService _forcedValidationService;
+    private readonly VerificationService _verificationService;
 #pragma warning restore
 
     // Attempts to verify a provided receipt
@@ -68,7 +67,7 @@ public class TopController : PlatformController
     // Validation process for an ios receipt
     private AppleVerificationResult ValidateApple(string receipt, string accountId, string transactionId, bool loadTest = false)
     {
-        AppleVerificationResult output = _appleService.VerifyApple(receipt: receipt, transactionId: transactionId, accountId: accountId);
+        AppleVerificationResult output = _verificationService.VerifyApple(receipt: receipt, transactionId: transactionId, accountId: accountId);
             
         // response from apple
         // string environment (Production, Sandbox)
@@ -152,7 +151,7 @@ public class TopController : PlatformController
         //     .Request($"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{receipt.PackageName}/purchases/products/{receipt.ProductId}/tokens/{receipt.PurchaseToken}")
         //     .OnFailure(response => Log.Local(Owner.Will, response.AsGenericData.JSON, emphasis: Log.LogType.ERROR))
         //     .Get(out GenericData json, out int code);
-        VerificationResult output = _googleService.VerifyGoogle(receipt, signature, receiptData, accountId);
+        VerificationResult output = _verificationService.VerifyGoogle(receipt, signature, receiptData, accountId);
         receipt.AccountId = accountId;
         
         if (output?.Status == null)
@@ -186,7 +185,7 @@ public class TopController : PlatformController
                     Receipt = receipt
                 });
 
-                _googleService.Create(receipt);
+                _receiptService.Create(receipt);
                 break;
             case VerificationResult.SuccessStatus.Duplicated:
                 Log.Warn(Owner.Will, "Duplicate Google receipt processed with the same account ID.", data: new

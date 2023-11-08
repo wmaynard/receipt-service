@@ -10,7 +10,6 @@ using Rumble.Platform.Common.Web;
 namespace Rumble.Platform.ReceiptService;
 public class Startup : PlatformStartup
 {
-    private Timer _memoryTimer;
     protected override PlatformOptions ConfigureOptions(PlatformOptions options) => options
         .SetProjectOwner(Owner.Will)
         .SetRegistrationName("Receipt V2")
