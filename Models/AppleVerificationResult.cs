@@ -25,14 +25,7 @@ public class AppleVerificationResult : PlatformDataModel
     public const string FRIENDLY_KEY_RECEIPT_DATA = "receiptData";
     public const string FRIENDLY_KEY_TIMESTAMP = "timestamp";
     
-    public enum SuccessStatus
-    {
-        False,
-        True,
-        Duplicated,
-        DuplicatedFail,
-        StoreOutage
-    }
+    
     
     [BsonElement(DB_KEY_STATUS)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_STATUS)]
@@ -74,4 +67,13 @@ public class AppleVerificationResult : PlatformDataModel
         ReceiptData = receiptData;
         Timestamp = timestamp;
     }
+}
+
+public enum SuccessStatus
+{
+    False,
+    True,
+    Duplicated,
+    DuplicatedFail,
+    StoreOutage
 }

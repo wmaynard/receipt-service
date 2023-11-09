@@ -35,6 +35,9 @@ public class TopController : PlatformController
 
         bool loadTest = !PlatformEnvironment.IsProd && Optional<bool>("loadTest");
 
+        string status = null;
+        
+        
         switch (channel)
         {
             case "aos":
@@ -45,6 +48,7 @@ public class TopController : PlatformController
                 if (string.IsNullOrWhiteSpace(signature))
                     throw new ReceiptException(receipt, "Receipt called with 'aos' as the channel without a signature. 'aos' receipts require a signature");
                 VerificationResult validated = ValidateAndroid(receipt, accountId, signature, receiptData, loadTest);
+                
                 return Ok(new RumbleJson
                 {
                     { "success", validated.Status },
@@ -53,6 +57,7 @@ public class TopController : PlatformController
             case "ios":
                 string appleReceipt = Require<string>(key: "receipt");
                 string transactionId = Require<string>(key: "transactionId");
+                
                 AppleVerificationResult appleValidated = ValidateApple(appleReceipt, accountId, transactionId, loadTest);
                 return Ok(new RumbleJson
                 {
@@ -83,13 +88,13 @@ public class TopController : PlatformController
         
         switch (output.Status)
         {
-            case AppleVerificationResult.SuccessStatus.False:
+            case SuccessStatus.False:
                 Log.Error(owner: Owner.Will, "Failed to validate Apple receipt. Order does not exist.", data: new
                 {
                     AccountId = accountId
                 });
                 break;
-            case AppleVerificationResult.SuccessStatus.DuplicatedFail:
+            case SuccessStatus.DuplicatedFail:
                 _apiService.Alert(
                     title: "Duplicate Apple receipt processed with a different account ID.",
                     message: "Duplicate Apple receipt processed with a different account ID. Potential malicious actor.",
@@ -101,8 +106,8 @@ public class TopController : PlatformController
                     } 
                 );
                 break;
-            case AppleVerificationResult.SuccessStatus.Duplicated when loadTest:
-            case AppleVerificationResult.SuccessStatus.True:
+            case SuccessStatus.Duplicated when loadTest:
+            case SuccessStatus.True:
                 Log.Info(Owner.Will, "Successful Apple receipt processed.", data: new
                 {
                     AccountId = accountId,
@@ -125,7 +130,7 @@ public class TopController : PlatformController
 
                 _receiptService.Create(newReceipt);
                 break;
-            case AppleVerificationResult.SuccessStatus.Duplicated:
+            case SuccessStatus.Duplicated:
                 Log.Warn(Owner.Will, "Duplicate Apple receipt processed with the same account ID.", data: new
                 {
                     AccountId = accountId,
@@ -140,8 +145,6 @@ public class TopController : PlatformController
     // Validation process for an aos receipt
     private VerificationResult ValidateAndroid(Receipt receipt, string accountId, string signature, RumbleJson receiptData, bool loadTest = false)
     {
-        receipt.Validate();
-        
         // Per https://developers.google.com/android-publisher/api-ref/rest/v3/purchases.products/get:
         // This API call should be able to check the purchase and consumption status of an inapp item.
         // This should be the modern way of validating receipts.  Consequently it should be left in as a
@@ -159,13 +162,13 @@ public class TopController : PlatformController
 
         switch (output.Status)
         {
-            case VerificationResult.SuccessStatus.False:
+            case SuccessStatus.False:
                 Log.Error(Owner.Will, "Failed to validate Google receipt. Order does not exist.", data: new
                 {
                     AccountId = accountId
                 });
                 break;
-            case VerificationResult.SuccessStatus.DuplicatedFail:
+            case SuccessStatus.DuplicatedFail:
                 _apiService.Alert(
                     title: "Duplicate Apple receipt processed with a different account ID.",
                     message: "Duplicate Apple receipt processed with a different account ID. Potential malicious actor.",
@@ -177,8 +180,8 @@ public class TopController : PlatformController
                     } 
                 );
                 break;
-            case VerificationResult.SuccessStatus.Duplicated when loadTest:
-            case VerificationResult.SuccessStatus.True:
+            case SuccessStatus.Duplicated when loadTest:
+            case SuccessStatus.True:
                 Log.Info(Owner.Will, "Successful Google receipt processed.", data: new
                 {
                     AccountId = accountId,
@@ -187,7 +190,7 @@ public class TopController : PlatformController
 
                 _receiptService.Create(receipt);
                 break;
-            case VerificationResult.SuccessStatus.Duplicated:
+            case SuccessStatus.Duplicated:
                 Log.Warn(Owner.Will, "Duplicate Google receipt processed with the same account ID.", data: new
                 {
                     AccountId = accountId,

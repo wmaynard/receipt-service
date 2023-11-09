@@ -41,8 +41,8 @@ public class VerificationService : PlatformService
             return new VerificationResult
             {
                 Status = _receiptService.Exists(orderId: receipt.OrderId)
-                    ? VerificationResult.SuccessStatus.True
-                    : VerificationResult.SuccessStatus.Duplicated,
+                    ? SuccessStatus.True
+                    : SuccessStatus.Duplicated,
                 Response = receipt,
                 TransactionId = receipt.OrderId,
                 OfferId = receipt.ProductId,
@@ -84,9 +84,9 @@ public class VerificationService : PlatformService
             {
                 Status = storedReceipt switch
                 {
-                    null => VerificationResult.SuccessStatus.True,
-                    _ when storedReceipt.AccountId == accountId => VerificationResult.SuccessStatus.Duplicated,
-                    _ => VerificationResult.SuccessStatus.DuplicatedFail
+                    null => SuccessStatus.True,
+                    _ when storedReceipt.AccountId == accountId => SuccessStatus.Duplicated,
+                    _ => SuccessStatus.DuplicatedFail
                 },
                 Response = receipt,
                 TransactionId = receipt.OrderId,
@@ -112,7 +112,7 @@ public class VerificationService : PlatformService
             );
             
             return new VerificationResult(
-                status: VerificationResult.SuccessStatus.False,
+                status: SuccessStatus.False,
                 response: receipt,
                 transactionId: receipt.OrderId,
                 offerId: receipt.ProductId,
@@ -138,8 +138,8 @@ public class VerificationService : PlatformService
             return new AppleVerificationResult
             {
                 Status = _receiptService.Exists(orderId: transactionId)
-                    ? AppleVerificationResult.SuccessStatus.True
-                    : AppleVerificationResult.SuccessStatus.Duplicated,
+                    ? SuccessStatus.True
+                    : SuccessStatus.Duplicated,
                 Response = verified.Receipt,
                 TransactionId = transactionId,
                 ReceiptKey = $"{PlatformEnvironment.Deployment}_s_iosReceipt_{transactionId}",
@@ -165,7 +165,7 @@ public class VerificationService : PlatformService
                     
                 return new AppleVerificationResult
                 {
-                    Status = AppleVerificationResult.SuccessStatus.False,
+                    Status = SuccessStatus.False,
                     Response = verified.Receipt,
                     TransactionId = transactionId,
                     ReceiptKey = null,
@@ -181,9 +181,9 @@ public class VerificationService : PlatformService
                 {
                     Status = storedReceipt switch
                     {
-                        null => AppleVerificationResult.SuccessStatus.True,
-                        _ when storedReceipt.AccountId == accountId => AppleVerificationResult.SuccessStatus.Duplicated,
-                        _ => AppleVerificationResult.SuccessStatus.DuplicatedFail
+                        null => SuccessStatus.True,
+                        _ when storedReceipt.AccountId == accountId => SuccessStatus.Duplicated,
+                        _ => SuccessStatus.DuplicatedFail
                     },
                     Response = verified.Receipt,
                     TransactionId = transactionId,
@@ -199,8 +199,8 @@ public class VerificationService : PlatformService
                 return new AppleVerificationResult
                 {
                     Status = verified.Status.Between(21003, 21007)
-                        ? AppleVerificationResult.SuccessStatus.False
-                        : AppleVerificationResult.SuccessStatus.StoreOutage,
+                        ? SuccessStatus.False
+                        : SuccessStatus.StoreOutage,
                     Response = null,
                     TransactionId = transactionId,
                     ReceiptKey = null,

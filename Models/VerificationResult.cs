@@ -25,14 +25,6 @@ public class VerificationResult : PlatformDataModel
     public const string FRIENDLY_KEY_RECEIPT_KEY = "receiptKey";
     public const string FRIENDLY_KEY_RECEIPT_DATA = "receiptData";
     public const string FRIENDLY_KEY_TIMESTAMP = "timestamp";
-
-    public enum SuccessStatus
-    {
-        False,
-        True,
-        Duplicated,
-        DuplicatedFail
-    }
     
     [BsonElement(DB_KEY_STATUS)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_STATUS)]

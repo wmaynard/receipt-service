@@ -72,16 +72,10 @@ public class Receipt : PlatformCollectionDocument
         errors = new List<string>();
         
         if (string.IsNullOrWhiteSpace(OrderId))
-        {
             errors.Add("OrderId cannot be empty.");
-        }
 
         if (string.IsNullOrWhiteSpace(ProductId))
-        {
             errors.Add("ProductId cannot be empty.");
-        }
-        // if (Signature == null)
-        //     errors.Add("Signature cannot be null.");
         
         
     }
