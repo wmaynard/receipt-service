@@ -26,81 +26,59 @@ public class TopController : PlatformController
 
     // Attempts to verify a provided receipt
     [HttpPost, Route("receipt")]
-    public ObjectResult ReceiptVerify()
+    public ObjectResult ValidateReceipt()
     {
         string accountId = Require<string>("account");
         string channel = Require<string>("channel");
         string game = Require<string>("game");
         
         if (game != PlatformEnvironment.GameSecret)
-            throw new PlatformException("Incorrect game key.", code: ErrorCode.Unauthorized);
+            throw new PlatformException("Incorrect game key.", ErrorCode.Unauthorized);
         
-        switch (channel)
+        return channel switch
         {
-            case "aos":
-                string signature = Optional<string>("signature"); // for android
-                Receipt receipt = Require<Receipt>("receipt");
-                RumbleJson receiptData = Require<RumbleJson>("receipt"); // for android fallback to verify raw data
-                Receipt temp = receiptData.ToModel<Receipt>();
-                
-                if (string.IsNullOrWhiteSpace(signature))
-                    throw new ReceiptException(receipt, "Receipt called with 'aos' as the channel without a signature. 'aos' receipts require a signature");
-
-                SuccessStatus status = GetAndroidStatus(receipt, accountId, signature, receiptData);
-                receipt.AccountId ??= accountId;
-                
-                return Ok(new RumbleJson
-                {
-                    { "success", status },
-                    { "receipt", receipt }
-                });
-            case "ios":
-                string appleReceipt = Require<string>("receipt");
-                string transactionId = Require<string>("transactionId");
-                
-                AppleVerificationResult appleValidated = ValidateApple(appleReceipt, accountId, transactionId, false);
-                return Ok(new RumbleJson
-                {
-                    { "success", appleValidated.Status },
-                    { "receipt", appleValidated.Response?.InApp.Find(inApp => inApp.TransactionId == transactionId) }
-                });
-            default:
-                throw new PlatformException("Receipt called with invalid channel.  Please use 'ios' or 'aos'.");
-        }
+            "aos" => ValidateAndroid(),
+            "ios" => ValidateApple(),
+            _ => throw new PlatformException("Receipt called with invalid channel.  Please use 'ios' or 'aos'.")
+        };
     }
 
-    private SuccessStatus GetAndroidStatus(Receipt receipt, string accountId, string signature, RumbleJson data)
+    private ObjectResult ValidateAndroid()
     {
-        SuccessStatus output = SuccessStatus.False;
-        string errorMessage = "";
-        
-        if (_forcedValidationService.HasBeenForced(receipt.OrderId))
-            output = _receiptService.Exists(receipt.OrderId)
-                ? SuccessStatus.True
-                : SuccessStatus.Duplicated;
-        else if (signature == null)
-            throw new ReceiptException(receipt, "Failed to verify Google receipt. No signature provided.");
-
-        if (GoogleValidator.IsValid(receipt, data, signature))
-            output = _receiptService.GetAccountIdFor(receipt.OrderId, out string existingAccountId) switch
-            {
-                null or "" => SuccessStatus.True,
-                _ when existingAccountId == accountId => SuccessStatus.Duplicated,
-                _ => SuccessStatus.DuplicatedFail
-            };
-
+        string accountId = Require<string>("account");
+        string signature = Require<string>("signature");
+        Receipt receipt = Require<Receipt>("receipt");
+        RumbleJson rawData = Require<RumbleJson>("receipt"); // There are two methods of validation; unsure if we can eliminate one of these
         object logData = new
         {
             AccountId = accountId,
             Receipt = receipt
         };
+        // Receipt temp = rawData.ToModel<Receipt>();
         
-        switch (output)
+        SuccessStatus status = SuccessStatus.False;
+        
+        if (_forcedValidationService.HasBeenForced(receipt.OrderId))
+            status = _receiptService.Exists(receipt.OrderId)
+                ? SuccessStatus.True
+                : SuccessStatus.Duplicated;
+        else if (signature == null)
+            throw new ReceiptException(receipt, "Failed to verify Google receipt. No signature provided.");
+
+        if (GoogleValidator.IsValid(receipt, rawData, signature))
+            status = _receiptService.GetAccountIdFor(receipt.OrderId, out string existingAccountId) switch // TODO: Increase validation count here
+            {
+                null or "" => SuccessStatus.True,
+                _ when existingAccountId == accountId => SuccessStatus.Duplicated,
+                _ => SuccessStatus.DuplicatedFail
+            };
+        
+        switch (status)
         {
             case SuccessStatus.True:
                 Log.Info(Owner.Will, "Successful Google receipt processed.", logData);
 
-                _receiptService.Create(receipt);
+                _receiptService.Create(receipt); // TODO: Set validations to 1 on insert
                 break;
             case SuccessStatus.Duplicated:
                 Log.Warn(Owner.Will, "Duplicate Google receipt processed with the same account ID.", logData);
@@ -124,8 +102,28 @@ public class TopController : PlatformController
             default:
                 throw new PlatformException("Unknown Android validation status");
         }
+        
+        receipt.AccountId ??= accountId;
+        return Ok(new RumbleJson
+        {
+            { "success", status }, // TODO: Can we rename this key to "status"?
+            { "receipt", receipt } // TODO: Is this used by the game server?
+        });
+    }
 
-        return output;
+    private ObjectResult ValidateApple()
+    {
+        // TODO: Refactor ValidateApple's overload
+        string accountId = Require<string>("account");
+        string appleReceipt = Require<string>("receipt");
+        string transactionId = Require<string>("transactionId");
+                
+        AppleVerificationResult appleValidated = ValidateApple(appleReceipt, accountId, transactionId, false);
+        return Ok(new RumbleJson
+        {
+            { "success", appleValidated.Status },
+            { "receipt", appleValidated.Response?.InApp.Find(inApp => inApp.TransactionId == transactionId) }
+        });
     }
 
     // Validation process for an ios receipt
