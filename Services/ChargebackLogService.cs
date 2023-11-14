@@ -27,28 +27,9 @@ public class ChargebackLogService : MinqService<ChargebackLog>
 			.ToArray();
 	}
 
-	public List<ChargebackLog> GetLogs(bool unbanned) => unbanned
-		? mongo
-			.All()
-			.Sort(sort => sort.OrderBy(log => log.Timestamp))
-			.ToList()
-		: mongo
-			.Where(query => query.EqualTo(log => log.Unbanned, false))
-			.Sort(sort => sort.OrderBy(log => log.Timestamp))
-			.ToList();
-
-	public List<ChargebackLog> GetLogsByAccount(string accountId, bool unbanned) => mongo
-		.Where(query =>
-		{
-			query.EqualTo(log => log.AccountId, accountId);
-			if (unbanned)
-				query.EqualTo(log => log.Unbanned, false);
-		})
-		.Sort(sort => sort.OrderBy(log => log.Timestamp))
-		.ToList();
-
-	public void UnbanByAccount(string accountId) => mongo
+	public ChargebackLog[] ForAccount(string accountId) => mongo
 		.Where(query => query.EqualTo(log => log.AccountId, accountId))
-		.Update(query => query.Set(log => log.Unbanned, true));
-
+		.Sort(sort => sort.OrderByDescending(log => log.Timestamp))
+		.Limit(1_000)
+		.ToArray();
 }

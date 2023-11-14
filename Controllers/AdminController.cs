@@ -24,7 +24,7 @@ public class AdminController : PlatformController
 #pragma warning restore
     
     // Retrieves all entries in redis and moves them over to Mongo
-    [HttpGet, Route(template: "redis"), IgnorePerformance] // to be removed when no longer needed
+    [HttpGet, Route("redis"), IgnorePerformance] // to be removed when no longer needed
     public ActionResult UpdateFromRedis()
     {
         int counter;
@@ -40,7 +40,7 @@ public class AdminController : PlatformController
     }
 
     // Fetches all receipts in Mongo
-    [HttpGet, Route(template: "all")]
+    [HttpGet, Route("all")]
     public ActionResult All()
     {
         List<Receipt> receipts = _receiptService.GetAll();
@@ -49,7 +49,7 @@ public class AdminController : PlatformController
     }
 
     // Fetches all receipts in Mongo matching provided accountId
-    [HttpGet, Route(template: "player")]
+    [HttpGet, Route("player")]
     public ActionResult Player()
     {
         string accountId = Require<string>(key: "accountId");
@@ -60,49 +60,26 @@ public class AdminController : PlatformController
     }
     
     // Adds a transactionId to force validation
-    [HttpPost, Route(template: "forceValidate")]
+    [HttpPost, Route("forceValidate")]
     public ActionResult ForceValidate()
     {
-        string transactionId = Require<string>(key: "transactionId");
-
-        ForcedValidation forcedValidation = new ForcedValidation(transactionId);
-
-        _forcedValidationService.Create(forcedValidation);
+        string transactionId = Require<string>("transactionId");
+        
+        _forcedValidationService.Insert(new ForcedValidation
+        {
+            TransactionId = transactionId,
+            Token = Token
+        });
 
         return Ok(message: "New transactionId added to forced transaction watchlist.");
     }
     
     // Fetches chargeback logs
-    [HttpGet, Route(template: "chargebacks")]
+    [HttpGet, Route("chargebacks")]
     public ActionResult GetChargebacks()
     {
-        string accountId = Optional<string>(key: "accountId");
-        bool unbanned = Optional<bool>(key: "includeUnbanned");
+        string accountId = Require<string>("accountId");
 
-        List<ChargebackLog> chargebackLogs;
-
-        if (accountId != null)
-        {
-            chargebackLogs = _chargebackLogService.GetLogsByAccount(accountId, unbanned);
-        }
-        else
-        {
-            chargebackLogs = _chargebackLogService.GetLogs(unbanned);
-        }
-
-        return Ok(new {Chargebacks = chargebackLogs});
-    }
-    
-    // Notifies the service to unban a player who was banned by chargeback
-    [HttpPatch, Route(template: "chargebacks/unban")]
-    public ActionResult ChargebackUnban()
-    {
-        string accountId = Require<string>(key: "accountId");
-
-        _apiService.UnbanPlayer(accountId);
-        _chargebackLogService.UnbanByAccount(accountId);
-
-        return Ok();
-
+        return Ok(_chargebackLogService.ForAccount(accountId));
     }
 }

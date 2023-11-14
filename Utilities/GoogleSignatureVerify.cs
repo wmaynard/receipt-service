@@ -3,49 +3,80 @@ using System.Text;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Crypto.Parameters;
 using System.Security.Cryptography;
+using RCL.Logging;
+using Rumble.Platform.Common.Exceptions;
 using Rumble.Platform.Common.Utilities;
+using Rumble.Platform.Data;
+using Rumble.Platform.ReceiptService.Models;
 
 // ReSharper disable ArrangeTypeMemberModifiers
 
 namespace Rumble.Platform.ReceiptService.Utilities
 {
-    class GoogleSignatureVerify
+    public static class GoogleValidator
     {
-        RSAParameters _rsaKeyInfo;
+        private static RSAParameters _rsaKeyInfo = Initialize();
+        private static bool _initialized;
+        
+        // TODO: Figure out how many validations succeed / fail the first method.
+        // The original code would log a warning when falling back to the second, but even from local testing it seemed
+        // to be the more common validation.  We ended up having quite a few warnings that were not actionable.
+        public static bool IsValid(Receipt receipt, RumbleJson data, string signature) =>
+            Verify(receipt.JSON.Replace(",\"accountId\":null,\"id\":null", ""), signature)
+            || Verify(data.Json, signature);
+            
 
-        public GoogleSignatureVerify()
+        private static bool Verify(string message, string signature)
         {
-            RsaKeyParameters rsaParameters= (RsaKeyParameters) PublicKeyFactory.CreateKey(Convert.FromBase64String(PlatformEnvironment.Require<string>("androidStoreKey"))); 
+            try
+            {
+                using RSACryptoServiceProvider rsa = new();
+                rsa.ImportParameters(_rsaKeyInfo);  
+                return rsa.VerifyData(Encoding.ASCII.GetBytes(message), "SHA1", Convert.FromBase64String(signature));
+            }
+            catch (Exception e)
+            {
+                Log.Critical(Owner.Will, "Error occured while attempting to validate Google receipt.", data: new
+                {
+                   Message = message,
+                   Signature = signature
+                }, exception: e);
+                return false;
+            }
+        }
 
-            byte[] rsaExp   = rsaParameters.Exponent.ToByteArray();
-            byte[] modulus  = rsaParameters.Modulus.ToByteArray();
+        private static RSAParameters Initialize()
+        {
+            if (_initialized)
+                return _rsaKeyInfo;
+
+            string aosKey = PlatformEnvironment.Require<string>("androidStoreKey");
+            RsaKeyParameters rsaParameters = (RsaKeyParameters) PublicKeyFactory.CreateKey(Convert.FromBase64String(aosKey)); 
+
+            byte[] modulus = rsaParameters.Modulus.ToByteArray();
 
             // Microsoft RSAParameters modulo wants leading zero's removed so create new array with leading zero's removed
             int pos = 0;
             while (pos < modulus.Length && modulus[pos] == 0)
                 pos++;
             
-            // for (int i = 0; i < modulus.Length; i++)
-            //     if (modulus[i] == 0) 
-            //         pos++;
-            //     else
-            //         break;
             byte[] rsaMod = new byte[modulus.Length - pos];
-            Array.Copy(modulus, pos, rsaMod, 0, modulus.Length - pos);
+            Array.Copy(
+                sourceArray: modulus,
+                sourceIndex: pos,
+                destinationArray: rsaMod,
+                destinationIndex: 0,
+                length: modulus.Length - pos
+            );
 
             // Fill the Microsoft parameters
             _rsaKeyInfo = new RSAParameters
             {
-                Exponent = rsaExp,
+                Exponent = rsaParameters.Exponent.ToByteArray(),
                 Modulus = rsaMod
             };
-        }
-
-        public bool Verify(string message, string signature)
-        {
-            using RSACryptoServiceProvider rsa = new();
-            rsa.ImportParameters(_rsaKeyInfo);  
-            return rsa.VerifyData(Encoding.ASCII.GetBytes(message), "SHA1", Convert.FromBase64String(signature));
+            _initialized = true;
+            return _rsaKeyInfo;
         }
     }
 }

@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
+using Rumble.Platform.Common.Models;
 using Rumble.Platform.Data;
 
 namespace Rumble.Platform.ReceiptService.Models;
@@ -13,9 +14,8 @@ public class ForcedValidation : PlatformCollectionDocument
 	[BsonElement(DB_KEY_TRANSACTION_ID)]
 	[JsonInclude, JsonPropertyName(FRIENDLY_KEY_TRANSACTION_ID)]
 	public string TransactionId { get; set; }
-
-	public ForcedValidation(string transactionId)
-	{
-		TransactionId = transactionId;
-	}
+	
+	[BsonElement("who")]
+	[JsonInclude, JsonPropertyName("administrator")]
+	public TokenInfo Token { get; set; }
 }

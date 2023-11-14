@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using RCL.Logging;
 using Rumble.Platform.Common.Attributes;
@@ -10,6 +11,7 @@ using Rumble.Platform.Data;
 using Rumble.Platform.ReceiptService.Exceptions;
 using Rumble.Platform.ReceiptService.Models;
 using Rumble.Platform.ReceiptService.Services;
+using Rumble.Platform.ReceiptService.Utilities;
 
 namespace Rumble.Platform.ReceiptService.Controllers;
 
@@ -23,42 +25,40 @@ public class TopController : PlatformController
 #pragma warning restore
 
     // Attempts to verify a provided receipt
-    [HttpPost, Route(template: "receipt")]
+    [HttpPost, Route("receipt")]
     public ObjectResult ReceiptVerify()
     {
-        string accountId = Require<string>(key: "account");
-        string channel = Require<string>(key: "channel");
-        string game = Require<string>(key: "game");
+        string accountId = Require<string>("account");
+        string channel = Require<string>("channel");
+        string game = Require<string>("game");
         
         if (game != PlatformEnvironment.GameSecret)
             throw new PlatformException("Incorrect game key.", code: ErrorCode.Unauthorized);
-
-        bool loadTest = !PlatformEnvironment.IsProd && Optional<bool>("loadTest");
-
-        string status = null;
-        
         
         switch (channel)
         {
             case "aos":
-                string signature = Optional<string>(key: "signature"); // for android
-                Receipt receipt = Require<Receipt>(key: "receipt");
-                RumbleJson receiptData = Require<RumbleJson>(key: "receipt"); // for android fallback to verify raw data
+                string signature = Optional<string>("signature"); // for android
+                Receipt receipt = Require<Receipt>("receipt");
+                RumbleJson receiptData = Require<RumbleJson>("receipt"); // for android fallback to verify raw data
+                Receipt temp = receiptData.ToModel<Receipt>();
                 
                 if (string.IsNullOrWhiteSpace(signature))
                     throw new ReceiptException(receipt, "Receipt called with 'aos' as the channel without a signature. 'aos' receipts require a signature");
-                VerificationResult validated = ValidateAndroid(receipt, accountId, signature, receiptData, loadTest);
+
+                SuccessStatus status = GetAndroidStatus(receipt, accountId, signature, receiptData);
+                receipt.AccountId ??= accountId;
                 
                 return Ok(new RumbleJson
                 {
-                    { "success", validated.Status },
-                    { "receipt", validated.Response }
+                    { "success", status },
+                    { "receipt", receipt }
                 });
             case "ios":
-                string appleReceipt = Require<string>(key: "receipt");
-                string transactionId = Require<string>(key: "transactionId");
+                string appleReceipt = Require<string>("receipt");
+                string transactionId = Require<string>("transactionId");
                 
-                AppleVerificationResult appleValidated = ValidateApple(appleReceipt, accountId, transactionId, loadTest);
+                AppleVerificationResult appleValidated = ValidateApple(appleReceipt, accountId, transactionId, false);
                 return Ok(new RumbleJson
                 {
                     { "success", appleValidated.Status },
@@ -67,6 +67,65 @@ public class TopController : PlatformController
             default:
                 throw new PlatformException("Receipt called with invalid channel.  Please use 'ios' or 'aos'.");
         }
+    }
+
+    private SuccessStatus GetAndroidStatus(Receipt receipt, string accountId, string signature, RumbleJson data)
+    {
+        SuccessStatus output = SuccessStatus.False;
+        string errorMessage = "";
+        
+        if (_forcedValidationService.HasBeenForced(receipt.OrderId))
+            output = _receiptService.Exists(receipt.OrderId)
+                ? SuccessStatus.True
+                : SuccessStatus.Duplicated;
+        else if (signature == null)
+            throw new ReceiptException(receipt, "Failed to verify Google receipt. No signature provided.");
+
+        if (GoogleValidator.IsValid(receipt, data, signature))
+            output = _receiptService.GetAccountIdFor(receipt.OrderId, out string existingAccountId) switch
+            {
+                null or "" => SuccessStatus.True,
+                _ when existingAccountId == accountId => SuccessStatus.Duplicated,
+                _ => SuccessStatus.DuplicatedFail
+            };
+
+        object logData = new
+        {
+            AccountId = accountId,
+            Receipt = receipt
+        };
+        
+        switch (output)
+        {
+            case SuccessStatus.True:
+                Log.Info(Owner.Will, "Successful Google receipt processed.", logData);
+
+                _receiptService.Create(receipt);
+                break;
+            case SuccessStatus.Duplicated:
+                Log.Warn(Owner.Will, "Duplicate Google receipt processed with the same account ID.", logData);
+                break;
+            case SuccessStatus.False:
+                Log.Warn(Owner.Will, "Failed to validate Google receipt. Order does not exist.", logData);
+                break;
+            case SuccessStatus.DuplicatedFail:
+                _apiService.Alert(
+                    title: "Duplicate Apple receipt processed with a different account ID.",
+                    message: "Duplicate Apple receipt processed with a different account ID. Potential malicious actor.",
+                    countRequired: 1,
+                    timeframe: 300,
+                    data: new RumbleJson
+                    {
+                        { "Account ID", accountId }
+                    } 
+                );
+                break;
+            case SuccessStatus.StoreOutage:
+            default:
+                throw new PlatformException("Unknown Android validation status");
+        }
+
+        return output;
     }
 
     // Validation process for an ios receipt
@@ -132,66 +191,6 @@ public class TopController : PlatformController
                 break;
             case SuccessStatus.Duplicated:
                 Log.Warn(Owner.Will, "Duplicate Apple receipt processed with the same account ID.", data: new
-                {
-                    AccountId = accountId,
-                    Receipt = receipt
-                });
-                break;
-        }
-
-        return output;
-    }
-
-    // Validation process for an aos receipt
-    private VerificationResult ValidateAndroid(Receipt receipt, string accountId, string signature, RumbleJson receiptData, bool loadTest = false)
-    {
-        // Per https://developers.google.com/android-publisher/api-ref/rest/v3/purchases.products/get:
-        // This API call should be able to check the purchase and consumption status of an inapp item.
-        // This should be the modern way of validating receipts.  Consequently it should be left in as a
-        // comment in case Google ever drops support for our current receipt validation.  However, it should
-        // be noted that this call is missing its auth header; Sean may be needed to get the correct auth token.
-        // _apiService
-        //     .Request($"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{receipt.PackageName}/purchases/products/{receipt.ProductId}/tokens/{receipt.PurchaseToken}")
-        //     .OnFailure(response => Log.Local(Owner.Will, response.AsGenericData.JSON, emphasis: Log.LogType.ERROR))
-        //     .Get(out GenericData json, out int code);
-        VerificationResult output = _verificationService.VerifyGoogle(receipt, signature, receiptData, accountId);
-        receipt.AccountId = accountId;
-        
-        if (output?.Status == null)
-            throw new ReceiptException(receipt, message: "Error occurred while trying to validate Google receipt.");
-
-        switch (output.Status)
-        {
-            case SuccessStatus.False:
-                Log.Error(Owner.Will, "Failed to validate Google receipt. Order does not exist.", data: new
-                {
-                    AccountId = accountId
-                });
-                break;
-            case SuccessStatus.DuplicatedFail:
-                _apiService.Alert(
-                    title: "Duplicate Apple receipt processed with a different account ID.",
-                    message: "Duplicate Apple receipt processed with a different account ID. Potential malicious actor.",
-                    countRequired: 1,
-                    timeframe: 300,
-                    data: new RumbleJson
-                    {
-                        { "Account ID", accountId }
-                    } 
-                );
-                break;
-            case SuccessStatus.Duplicated when loadTest:
-            case SuccessStatus.True:
-                Log.Info(Owner.Will, "Successful Google receipt processed.", data: new
-                {
-                    AccountId = accountId,
-                    Receipt = receipt
-                });
-
-                _receiptService.Create(receipt);
-                break;
-            case SuccessStatus.Duplicated:
-                Log.Warn(Owner.Will, "Duplicate Google receipt processed with the same account ID.", data: new
                 {
                     AccountId = accountId,
                     Receipt = receipt

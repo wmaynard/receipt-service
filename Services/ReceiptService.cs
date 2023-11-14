@@ -10,9 +10,14 @@ namespace Rumble.Platform.ReceiptService.Services;
 
 public class ReceiptService : PlatformMongoService<Receipt>
 {
-    public ReceiptService() : base(collection: "receipts") {  }
+    public ReceiptService() : base("receipts") {  }
 
     public bool Exists(string orderId) => _collection.CountDocuments(receipt => receipt.OrderId == orderId) > 0;
+
+    public string GetAccountIdFor(string orderId, out string accountId) => accountId = _collection
+	    .Find(receipt => receipt.OrderId == orderId)
+	    .Project(Builders<Receipt>.Projection.Expression(receipt => receipt.AccountId))
+	    .FirstOrDefault();
     
     public string[] RemoveExistingIdsFrom(params string[] orderIds)
     {

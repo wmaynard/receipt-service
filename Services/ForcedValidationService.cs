@@ -1,23 +1,16 @@
 using MongoDB.Driver;
+using Rumble.Platform.Common.Minq;
 using Rumble.Platform.Common.Services;
 using Rumble.Platform.ReceiptService.Models;
 
 namespace Rumble.Platform.ReceiptService.Services;
 
-public class ForcedValidationService : PlatformMongoService<ForcedValidation>
+public class ForcedValidationService : MinqService<ForcedValidation>
 {
-	public ForcedValidationService() : base(collection: "forcedValidations") {  }
+	// TODO: Include Admin tokens
+	public ForcedValidationService() : base("forcedValidations") {  }
+
 	
-	// Check if exists by transactionId
-	public bool CheckTransactionId(string transactionId)
-	{
-		ForcedValidation forcedValidation = _collection.Find(filter: forcedValidation => forcedValidation.TransactionId == transactionId).FirstOrDefault();
-
-		if (forcedValidation == null)
-		{
-			return false;
-		}
-
-		return true;
-	}
+	public bool HasBeenForced(string transactionId) => mongo
+		.Count(query => query.EqualTo(validation => validation.TransactionId, transactionId)) > 0;
 }

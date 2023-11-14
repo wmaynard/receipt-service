@@ -56,14 +56,9 @@ public class VerificationResult : PlatformDataModel
     
     public VerificationResult(){}
 
-    public VerificationResult(SuccessStatus status, Receipt response, string transactionId, string offerId, string receiptKey, string receiptData, long timestamp)
+    public VerificationResult WithStatus(SuccessStatus status)
     {
         Status = status;
-        Response = response;
-        TransactionId = transactionId;
-        OfferId = offerId;
-        ReceiptKey = receiptKey;
-        ReceiptData = receiptData;
-        Timestamp = timestamp;
+        return this;
     }
 }
