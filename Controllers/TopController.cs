@@ -17,7 +17,7 @@ using Rumble.Platform.ReceiptService.Utilities;
 
 namespace Rumble.Platform.ReceiptService.Controllers;
 
-[ApiController, Route(template: "commerce"), UseMongoTransaction]
+[ApiController, Route("commerce"), RequireAuth]
 public class TopController : PlatformController
 {
 #pragma warning disable
@@ -31,10 +31,6 @@ public class TopController : PlatformController
     public ObjectResult ValidateReceipt()
     {
         string channel = Require<string>("channel");
-        string game = Require<string>("game");
-        
-        if (game != PlatformEnvironment.GameSecret)
-            throw new PlatformException("Incorrect game key.", code: ErrorCode.Unauthorized);
         
         // Unlike most endpoints in Platform, there are more variables found in the methods here.
         // It would be MUCH better practice to split up Android and iOS into separate endpoints rather than have
@@ -46,6 +42,12 @@ public class TopController : PlatformController
             _ => throw new PlatformException("Receipt called with invalid channel.  Please use 'ios' or 'aos'.")
         };
     }
+
+    [HttpPost, Route("google")]
+    public ObjectResult ValidateGoogleReceipt() => ValidateAndroid();
+
+    [HttpPost, Route("apple")]
+    public ObjectResult ValidateAppleReceipt() => ValidateApple();
 
     private ObjectResult ValidateAndroid()
     {
