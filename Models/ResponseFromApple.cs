@@ -1,3 +1,4 @@
+using System;
 using System.Text.Json.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
 // ReSharper disable MemberCanBePrivate.Global
@@ -6,7 +7,7 @@ using MongoDB.Bson.Serialization.Attributes;
 namespace Rumble.Platform.ReceiptService.Models;
 
 [BsonIgnoreExtraElements]
-public class AppleValidation : Validation
+public class ResponseFromApple : Validation
 {
     // response from apple
     // string environment (Production, Sandbox)

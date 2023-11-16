@@ -5,6 +5,8 @@ using RCL.Logging;
 using Rumble.Platform.Common.Attributes;
 using Rumble.Platform.Common.Enums;
 using Rumble.Platform.Common.Exceptions;
+using Rumble.Platform.Common.Extensions;
+using Rumble.Platform.Common.Services;
 using Rumble.Platform.Common.Utilities;
 using Rumble.Platform.Common.Web;
 using Rumble.Platform.Data;
@@ -21,20 +23,22 @@ public class TopController : PlatformController
 #pragma warning disable
     private readonly Services.ReceiptService _receiptService;
     private readonly ForcedValidationService _forcedValidationService;
-    private readonly VerificationService _verificationService;
+    private readonly DynamicConfig _dynamicConfig;
 #pragma warning restore
 
     // Attempts to verify a provided receipt
     [HttpPost, Route("receipt")]
     public ObjectResult ValidateReceipt()
     {
-        string accountId = Require<string>("account");
         string channel = Require<string>("channel");
         string game = Require<string>("game");
         
         if (game != PlatformEnvironment.GameSecret)
-            throw new PlatformException("Incorrect game key.", ErrorCode.Unauthorized);
+            throw new PlatformException("Incorrect game key.", code: ErrorCode.Unauthorized);
         
+        // Unlike most endpoints in Platform, there are more variables found in the methods here.
+        // It would be MUCH better practice to split up Android and iOS into separate endpoints rather than have
+        // branching execution with shared keys.
         return channel switch
         {
             "aos" => ValidateAndroid(),
@@ -49,11 +53,6 @@ public class TopController : PlatformController
         string signature = Require<string>("signature");
         Receipt receipt = Require<Receipt>("receipt");
         RumbleJson rawData = Require<RumbleJson>("receipt"); // There are two methods of validation; unsure if we can eliminate one of these
-        object logData = new
-        {
-            AccountId = accountId,
-            Receipt = receipt
-        };
         // Receipt temp = rawData.ToModel<Receipt>();
         
         SuccessStatus status = SuccessStatus.False;
@@ -73,35 +72,12 @@ public class TopController : PlatformController
                 _ => SuccessStatus.DuplicatedFail
             };
         
-        switch (status)
+        ProcessByStatus(status, receipt, accountId, logData: new
         {
-            case SuccessStatus.True:
-                Log.Info(Owner.Will, "Successful Google receipt processed.", logData);
-
-                _receiptService.Create(receipt); // TODO: Set validations to 1 on insert
-                break;
-            case SuccessStatus.Duplicated:
-                Log.Warn(Owner.Will, "Duplicate Google receipt processed with the same account ID.", logData);
-                break;
-            case SuccessStatus.False:
-                Log.Warn(Owner.Will, "Failed to validate Google receipt. Order does not exist.", logData);
-                break;
-            case SuccessStatus.DuplicatedFail:
-                _apiService.Alert(
-                    title: "Duplicate Apple receipt processed with a different account ID.",
-                    message: "Duplicate Apple receipt processed with a different account ID. Potential malicious actor.",
-                    countRequired: 1,
-                    timeframe: 300,
-                    data: new RumbleJson
-                    {
-                        { "Account ID", accountId }
-                    } 
-                );
-                break;
-            case SuccessStatus.StoreOutage:
-            default:
-                throw new PlatformException("Unknown Android validation status");
-        }
+            AccountId = accountId,
+            Receipt = receipt,
+            Source = "Google"
+        });
         
         receipt.AccountId ??= accountId;
         return Ok(new RumbleJson
@@ -111,26 +87,16 @@ public class TopController : PlatformController
         });
     }
 
-    private ObjectResult ValidateApple()
+    private SuccessStatus PingApple(string receiptAsString, string accountId, string transactionId, out ResponseFromApple response)
     {
-        // TODO: Refactor ValidateApple's overload
-        string accountId = Require<string>("account");
-        string appleReceipt = Require<string>("receipt");
-        string transactionId = Require<string>("transactionId");
-                
-        AppleVerificationResult appleValidated = ValidateApple(appleReceipt, accountId, transactionId, false);
-        return Ok(new RumbleJson
-        {
-            { "success", appleValidated.Status },
-            { "receipt", appleValidated.Response?.InApp.Find(inApp => inApp.TransactionId == transactionId) }
-        });
-    }
-
-    // Validation process for an ios receipt
-    private AppleVerificationResult ValidateApple(string receipt, string accountId, string transactionId, bool loadTest = false)
-    {
-        AppleVerificationResult output = _verificationService.VerifyApple(receipt: receipt, transactionId: transactionId, accountId: accountId);
-            
+        SuccessStatus output = _forcedValidationService.CheckForForcedValidation(transactionId);
+        
+        // apple specific looks at receipt
+        // receipt is base64 encoded, supposedly fetched from app on device with NSBundle.appStoreReceiptURL
+        // requires password
+        // requires exclude-old-transactions if auto-renewable subscriptions
+        // assuming no subscriptions for now, possible to put in later if needed
+        
         // response from apple
         // string environment (Production, Sandbox)
         // boolean is-retryable (0, 1) for status codes 21100-21199, 1 means try again, 0 means do not
@@ -139,22 +105,147 @@ public class TopController : PlatformController
         // list pending_renewal_info (pending renewal information) only for auto-renewable subscriptions
         // json receipt (json) of receipt sent for verification
         // int status (0, status code) 0 if valid, status code if error; see https://developer.apple.com/documentation/appstorereceipts/status for status codes
-        
-        if (output?.Status == null)
-            throw new AppleReceiptException(receipt, "Error occurred while trying to validate Apple receipt.");
-        
-        switch (output.Status)
+        _apiService
+            .Request(PlatformEnvironment.IsProd || _dynamicConfig.Require<bool>("isProd")
+                ? _dynamicConfig.Require<string>("iosVerifyReceiptUrl")
+                : _dynamicConfig.Require<string>("iosVerifyReceiptSandbox")
+            )
+            .SetPayload(new RumbleJson
+            {
+                {"receipt-data", receiptAsString},
+                {"password", PlatformEnvironment.Require<string>("appleSharedSecret")}
+            })
+            .OnSuccess(res => { } )
+            .OnFailure(res =>
+            {
+                _apiService.Alert(
+                    title: "Exception when sending a request to Apple.  App Store may be down.",
+                    message: "An exception was encountered when sending a request to Apple's App store.",
+                    countRequired: 1,
+                    timeframe: 300,
+                    data: new RumbleJson
+                    {
+                        { "Account ID", accountId },
+                        { "Response", res }
+                    },
+                    owner: Owner.Will
+                );
+            })
+            .Post(out response, out int _);
+            // TODO: use response.Require<int>("status") instead of a custom model here, as it's the only thing used?
+
+        if (response?.Status == 21007)
         {
-            case SuccessStatus.False:
-                Log.Error(owner: Owner.Will, "Failed to validate Apple receipt. Order does not exist.", data: new
+            if (!PlatformEnvironment.IsProd)
+                output = SuccessStatus.True;
+            else
+                Log.Warn(Owner.Will, message: "A testflight purchase was attempted on the production environment. This receipt validation is thus blocked.", data: new
                 {
                     AccountId = accountId
                 });
+        }
+        else if (response?.Status == 0)
+            output = _receiptService.GetAccountIdFor(transactionId, out string existingAccountId) switch
+            {
+                null or "" => SuccessStatus.True,
+                _ when existingAccountId == accountId => SuccessStatus.Duplicated,
+                _ => SuccessStatus.DuplicatedFail
+            };
+        else
+            _apiService.Alert(
+                title: "Failed to validate iOS receipt.",
+                message: "Failed to validate iOS receipt. Apple's App store may have an outage.",
+                countRequired: 1,
+                timeframe: 300,
+                data: new RumbleJson
+                {
+                    { "Account ID", accountId },
+                    { "Status", response.Status }
+                },
+                owner: Owner.Will
+            );
+
+        return output;
+    }
+
+    private ObjectResult ValidateApple()
+    {
+        string accountId = Require<string>("account");
+        string receiptAsString = Require<string>("receipt");
+        string transactionId = Require<string>("transactionId");
+
+        SuccessStatus status = PingApple(receiptAsString, accountId, transactionId, out ResponseFromApple response);
+
+        if (response == null)
+        {
+            Log.Error(Owner.Will, "Null response from Apple API", data: new
+            {
+                AccountId = accountId,
+                Receipt = receiptAsString
+            });
+            return CreateResponse(SuccessStatus.False);
+        }
+
+        PurchaseDetails details = response.Receipt?.PurchaseDetails?.Find(appleInApp => appleInApp.TransactionId == transactionId);
+
+        if (status == SuccessStatus.False && details == null)
+            _apiService.Alert(
+                title: "Failure to validate Apple receipt.",
+                message: "Receipt validated correctly with Apple but no matching transaction ID was found.",
+                countRequired: 5,
+                timeframe: 300,
+                data: new RumbleJson
+                {
+                    { "Account ID", accountId },
+                    { "Transaction ID", transactionId },
+                    { "Receipt", receiptAsString }
+                } 
+            );
+
+        Receipt receipt = new()
+        {
+            AccountId = accountId,
+            OrderId = transactionId,
+            PackageName = response.Receipt?.BundleId,
+            ProductId = response.Receipt?.PurchaseDetails?.FirstOrDefault()?.ProductId,
+            PurchaseTime = Convert.ToInt64(response.Receipt?.ReceiptCreationDateMs),
+            PurchaseState = 0,
+            Acknowledged = false,
+            Quantity = int.TryParse(details?.Quantity, out int quantity)
+                ? quantity
+                : 0
+        };
+        
+        ProcessByStatus(status, receipt, accountId, logData: new
+        {
+            AccountId = accountId,
+            OrderId = transactionId,
+            ReceiptAsString = receiptAsString,
+            Source = "Apple"
+        });
+        
+        return CreateResponse(status, details: details);
+    }
+
+    private void ProcessByStatus(SuccessStatus status, Receipt receipt, string accountId, object logData)
+    {
+        switch (status)
+        {
+            case SuccessStatus.True:
+                Log.Info(Owner.Will, "Successful receipt processed.", logData);
+
+                _receiptService.Create(receipt); // TODO: Set validations to 1 on insert
+                break;
+            case SuccessStatus.Duplicated:
+                Log.Warn(Owner.Will, "Duplicate receipt processed with the same account ID.", logData);
+                break;
+            case SuccessStatus.False:
+                Log.Error(Owner.Will, "Failed to validate receipt. Order does not exist.", logData);
                 break;
             case SuccessStatus.DuplicatedFail:
                 _apiService.Alert(
-                    title: "Duplicate Apple receipt processed with a different account ID.",
-                    message: "Duplicate Apple receipt processed with a different account ID. Potential malicious actor.",
+                    title: "Duplicate receipt processed with a different account ID.",
+                    message: "Duplicate receipt processed with a different account ID. Potential malicious actor.",
                     countRequired: 1,
                     timeframe: 300,
                     data: new RumbleJson
@@ -163,39 +254,17 @@ public class TopController : PlatformController
                     } 
                 );
                 break;
-            case SuccessStatus.Duplicated when loadTest:
-            case SuccessStatus.True:
-                Log.Info(Owner.Will, "Successful Apple receipt processed.", data: new
-                {
-                    AccountId = accountId,
-                    Receipt = receipt
-                });
-                
-                Receipt newReceipt = new()
-                {
-                    AccountId = accountId,
-                    OrderId = output.TransactionId,
-                    PackageName = output.Response.BundleId,
-                    ProductId = output.Response.InApp[0].ProductId,
-                    PurchaseTime = output.Timestamp,
-                    PurchaseState = 0,
-                    Acknowledged = false
-                };
-                string quantity = output.Response.InApp.Find(inApp => inApp.TransactionId == transactionId)?.Quantity;
-                if (!string.IsNullOrWhiteSpace(quantity))
-                    newReceipt.Quantity = int.Parse(quantity);
-
-                _receiptService.Create(newReceipt);
-                break;
-            case SuccessStatus.Duplicated:
-                Log.Warn(Owner.Will, "Duplicate Apple receipt processed with the same account ID.", data: new
-                {
-                    AccountId = accountId,
-                    Receipt = receipt
-                });
+            default:
                 break;
         }
-
-        return output;
     }
+
+    private ObjectResult CreateResponse(SuccessStatus status, Receipt receipt = null, PurchaseDetails details = null) => Ok(new RumbleJson
+    {
+        { "success", status },
+        { "receipt", receipt != null
+            ? receipt
+            : details
+        }
+    });
 }

@@ -7,7 +7,7 @@ using Rumble.Platform.Data;
 namespace Rumble.Platform.ReceiptService.Models;
 
 [BsonIgnoreExtraElements]
-public class AppleInApp : PlatformDataModel
+public class PurchaseDetails : PlatformDataModel
 {
 	internal const string DB_KEY_QUANTITY                   = "qty";
 	internal const string DB_KEY_PRODUCT_ID                 = "prodTd";

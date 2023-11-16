@@ -33,7 +33,7 @@ public class AppleVerificationResult : PlatformDataModel
     
     [BsonElement(DB_KEY_RESPONSE)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_RESPONSE)]
-    public AppleReceipt Response { get; set; }
+    public AppleReceipt Receipt { get; set; }
 
     [BsonElement(DB_KEY_TRANSACTION_ID)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_TRANSACTION_ID)]
@@ -57,10 +57,10 @@ public class AppleVerificationResult : PlatformDataModel
     
     public AppleVerificationResult(){}
 
-    public AppleVerificationResult(SuccessStatus status, AppleReceipt response, string transactionId, string offerId, string receiptKey, string receiptData, long timestamp)
+    public AppleVerificationResult(SuccessStatus status, AppleReceipt receipt, string transactionId, string offerId, string receiptKey, string receiptData, long timestamp)
     {
         Status = status;
-        Response = response;
+        Receipt = receipt;
         TransactionId = transactionId;
         OfferId = offerId;
         ReceiptKey = receiptKey;
@@ -71,9 +71,8 @@ public class AppleVerificationResult : PlatformDataModel
 
 public enum SuccessStatus
 {
-    False,
-    True,
-    Duplicated,
-    DuplicatedFail,
-    StoreOutage
+    False = 0,
+    True = 1,
+    Duplicated = 2,
+    DuplicatedFail = 3
 }
