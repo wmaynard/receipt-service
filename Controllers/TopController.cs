@@ -333,7 +333,7 @@ public class TopController : PlatformController
             case SuccessStatus.True:
                 Log.Info(Owner.Will, "Successful receipt processed.", logData);
 
-                _receiptService.Create(receipt); // TODO: Set validations to 1 on insert
+                _receiptService.Insert(receipt); // TODO: Set validations to 1 on insert
                 break;
             case SuccessStatus.Duplicated:
                 Log.Warn(Owner.Will, "Duplicate receipt processed with the same account ID.", logData);
