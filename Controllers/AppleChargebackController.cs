@@ -96,7 +96,7 @@ public class AppleChargebackController : PlatformController
 
 				string transactionId = appleTransactionInfo.OriginalTransactionId;
 
-				string accountId = _receiptService.GetAccountIdByOrderId(orderId: transactionId);
+				_receiptService.GetAccountIdFor(transactionId, out string accountId);
 
 				_apiService.BanPlayer(accountId, reason: "iOS chargeback");
 

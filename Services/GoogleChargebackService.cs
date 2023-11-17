@@ -192,9 +192,7 @@ Timestamp (ms): {data.VoidedTimeMillis}
 
 	protected override void ProcessTask(ChargebackData data)
 	{
-		string orderId = data.OrderId;
-		
-		string accountId = _receiptService.GetAccountIdByOrderId(orderId);
+		_receiptService.GetAccountIdFor(data.OrderId, out string accountId);
 
 		if (!string.IsNullOrWhiteSpace(accountId))
 		{
@@ -212,7 +210,7 @@ Timestamp (ms): {data.VoidedTimeMillis}
 		_chargebackLogService.Insert(new ChargebackLog
 		{
 			AccountId = accountId ?? "other env",
-			OrderId = orderId,
+			OrderId = data.OrderId,
 			VoidedTimestamp = data.VoidedTimeMillis,
 			Reason = data.VoidedReason.ToString(),
 			Source = data.VoidedSource.ToString()

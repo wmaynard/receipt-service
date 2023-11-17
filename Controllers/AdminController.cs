@@ -39,15 +39,6 @@ public class AdminController : PlatformController
         return Ok(message: $"Data successfully fetched from Redis; {counter} new entries entered into Mongo.");
     }
 
-    // Fetches all receipts in Mongo
-    [HttpGet, Route("all")]
-    public ActionResult All()
-    {
-        List<Receipt> receipts = _receiptService.GetAll();
-        
-        return Ok(new { Receipts = receipts });
-    }
-
     // Fetches all receipts in Mongo matching provided accountId
     [HttpGet, Route("player")]
     public ActionResult Player()

@@ -66,6 +66,10 @@ public class Receipt : PlatformCollectionDocument
     [BsonElement(DB_KEY_ACCOUNT_ID)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_ACCOUNT_ID)]
     public string AccountId { get; set; }
+    
+    [BsonElement("validations")]
+    [JsonPropertyName("validations")]
+    public int ValidationCount { get; set; }
 
     protected override void Validate(out List<string> errors)
     {
