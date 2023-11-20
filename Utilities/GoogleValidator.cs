@@ -31,7 +31,7 @@ namespace Rumble.Platform.ReceiptService.Utilities
             try
             {
                 using RSACryptoServiceProvider rsa = new();
-                rsa.ImportParameters(_rsaKeyInfo);  
+                rsa.ImportParameters(_rsaKeyInfo);
                 return rsa.VerifyData(Encoding.ASCII.GetBytes(message), "SHA1", Convert.FromBase64String(signature));
             }
             catch (Exception e)

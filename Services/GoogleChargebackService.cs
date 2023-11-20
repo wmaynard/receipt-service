@@ -42,6 +42,9 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 			channel: PlatformEnvironment.Optional<string>(key: "slackChannel") ?? PlatformEnvironment.SlackLogChannel,
 			token: PlatformEnvironment.SlackLogBotToken
 		);
+		#if DEBUG
+		Pause();
+		#endif
 	}
 	
 	protected override void OnTasksCompleted(ChargebackData[] data) =>

@@ -1,7 +1,10 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
+using Rumble.Platform.Common.Exceptions;
 using Rumble.Platform.Data;
+using Rumble.Platform.Common.Services;
+using Rumble.Platform.ReceiptService.Exceptions;
 
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable ArrangeAttributes
@@ -80,8 +83,14 @@ public class Receipt : PlatformCollectionDocument
 
         if (string.IsNullOrWhiteSpace(ProductId))
             errors.Add("ProductId cannot be empty.");
-        
-        
+    }
+
+    public void EnsureReceiptBundleMatches()
+    {
+        if (string.IsNullOrWhiteSpace(PackageName))
+            throw new BundleMismatchException(this, "Bundle ID missing");
+        if (PackageName != DynamicConfig.Instance?.Require<string>("validBundleId"))
+            throw new BundleMismatchException(this, "Bundle ID mismatch");
     }
 }
 // Receipt

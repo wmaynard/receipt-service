@@ -37,8 +37,8 @@ public class TopController : PlatformController
         // branching execution with shared keys.
         return channel switch
         {
-            "aos" => ValidateAndroid(),
-            "ios" => ValidateApple(),
+            "aos" => ValidateGoogleReceipt(),
+            "ios" => ValidateAppleReceipt(),
             _ => throw new PlatformException("Receipt called with invalid channel.  Please use 'ios' or 'aos'.")
         };
     }
@@ -105,19 +105,16 @@ public class TopController : PlatformController
 
         PurchaseDetails details = response.Receipt?.PurchaseDetails?.Find(appleInApp => appleInApp.TransactionId == transactionId);
 
-        if (status == SuccessStatus.False && details == null)
-            _apiService.Alert(
-                title: "Failure to validate Apple receipt.",
-                message: "Receipt validated correctly with Apple but no matching transaction ID was found.",
-                countRequired: 5,
-                timeframe: 300,
-                data: new RumbleJson
-                {
-                    { "Account ID", accountId },
-                    { "Transaction ID", transactionId },
-                    { "Receipt", receiptAsString }
-                } 
-            );
+        if (details == null)
+        {
+            status = SuccessStatus.False;
+            Log.Warn(Owner.Will, "A receipt is valid, but no matching transaction ID was found in the response.", data: new
+            {
+                Help = "This could be an indication that someone is using a hacked client or trying to double-redeem an offer.",
+                AccountId = accountId,
+                AppleResponse = response
+            });
+        }
 
         Receipt receipt = new()
         {
@@ -142,47 +139,6 @@ public class TopController : PlatformController
         });
         
         return CreateResponse(status, details: details);
-    }
-
-    // TODO: Delete this once we split the endpoints.  It's WET / copied into the separate GPG receipt validation endpoint.
-    private ObjectResult ValidateAndroid()
-    {
-        string accountId = Require<string>("account");
-        string signature = Require<string>("signature");
-        Receipt receipt = Require<Receipt>("receipt");
-        RumbleJson rawData = Require<RumbleJson>("receipt"); // There are two methods of validation; unsure if we can eliminate one of these
-        // Receipt temp = rawData.ToModel<Receipt>();
-        
-        SuccessStatus status = SuccessStatus.False;
-        
-        if (_forcedValidationService.HasBeenForced(receipt.OrderId))
-            status = _receiptService.Exists(receipt.OrderId)
-                ? SuccessStatus.True
-                : SuccessStatus.Duplicated;
-        else if (signature == null)
-            throw new ReceiptException(receipt, "Failed to verify Google receipt. No signature provided.");
-
-        if (GoogleValidator.IsValid(receipt, rawData, signature))
-            status = _receiptService.GetAccountIdFor(receipt.OrderId, out string existingAccountId) switch // TODO: Increase validation count here
-            {
-                null or "" => SuccessStatus.True,
-                _ when existingAccountId == accountId => SuccessStatus.Duplicated,
-                _ => SuccessStatus.DuplicatedFail
-            };
-        
-        ProcessByStatus(status, receipt, accountId, logData: new
-        {
-            AccountId = accountId,
-            Receipt = receipt,
-            Source = "Google"
-        });
-        
-        receipt.AccountId ??= accountId;
-        return Ok(new RumbleJson
-        {
-            { "success", status }, // TODO: Can we rename this key to "status"?
-            { "receipt", receipt } // TODO: Is this used by the game server?
-        });
     }
 
     private SuccessStatus PingApple(string receiptAsString, string accountId, string transactionId, out ResponseFromApple response)
@@ -266,80 +222,23 @@ public class TopController : PlatformController
         return output;
     }
 
-    // TODO: Delete this once we split the endpoints.  It's WET / copied into the separate Apple receipt validation endpoint.
-    private ObjectResult ValidateApple()
-    {
-        string accountId = Require<string>("account");
-        string receiptAsString = Require<string>("receipt");
-        string transactionId = Require<string>("transactionId");
-
-        SuccessStatus status = PingApple(receiptAsString, accountId, transactionId, out ResponseFromApple response);
-
-        if (response == null)
-        {
-            Log.Error(Owner.Will, "Null response from Apple API", data: new
-            {
-                AccountId = accountId,
-                Receipt = receiptAsString
-            });
-            return CreateResponse(SuccessStatus.False);
-        }
-
-        PurchaseDetails details = response.Receipt?.PurchaseDetails?.Find(appleInApp => appleInApp.TransactionId == transactionId);
-
-        if (status == SuccessStatus.False && details == null)
-            _apiService.Alert(
-                title: "Failure to validate Apple receipt.",
-                message: "Receipt validated correctly with Apple but no matching transaction ID was found.",
-                countRequired: 5,
-                timeframe: 300,
-                data: new RumbleJson
-                {
-                    { "Account ID", accountId },
-                    { "Transaction ID", transactionId },
-                    { "Receipt", receiptAsString }
-                } 
-            );
-
-        Receipt receipt = new()
-        {
-            AccountId = accountId,
-            OrderId = transactionId,
-            PackageName = response.Receipt?.BundleId,
-            ProductId = response.Receipt?.PurchaseDetails?.FirstOrDefault()?.ProductId,
-            PurchaseTime = Convert.ToInt64(response.Receipt?.ReceiptCreationDateMs),
-            PurchaseState = 0,
-            Acknowledged = false,
-            Quantity = int.TryParse(details?.Quantity, out int quantity)
-                ? quantity
-                : 0
-        };
-        
-        ProcessByStatus(status, receipt, accountId, logData: new
-        {
-            AccountId = accountId,
-            OrderId = transactionId,
-            ReceiptAsString = receiptAsString,
-            Source = "Apple"
-        });
-        
-        return CreateResponse(status, details: details);
-    }
-
     private void ProcessByStatus(SuccessStatus status, Receipt receipt, string accountId, object logData)
     {
         switch (status)
         {
             case SuccessStatus.True:
+                receipt.EnsureReceiptBundleMatches();
+                
                 Log.Info(Owner.Will, "Successful receipt processed.", logData);
-
+                
                 _receiptService.Insert(receipt); // TODO: Set validations to 1 on insert
                 break;
             case SuccessStatus.Duplicated:
+                receipt.EnsureReceiptBundleMatches();
                 Log.Warn(Owner.Will, "Duplicate receipt processed with the same account ID.", logData);
                 break;
             case SuccessStatus.False:
-                Log.Error(Owner.Will, "Failed to validate receipt. Order does not exist.", logData);
+                Log.Error(Owner.Will, "Failed to validate receipt.", logData);
                 break;
             case SuccessStatus.DuplicatedFail:
                 _apiService.Alert(
