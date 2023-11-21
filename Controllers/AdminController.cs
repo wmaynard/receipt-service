@@ -19,31 +19,13 @@ public class AdminController : PlatformController
 #pragma warning disable
     private readonly ChargebackLogService    _chargebackLogService;
     private readonly Services.ReceiptService _receiptService;
-    private readonly RedisService            _redisService;   // to be removed when no longer needed
     private readonly ForcedValidationService _forcedValidationService;
 #pragma warning restore
-    
-    // Retrieves all entries in redis and moves them over to Mongo
-    [HttpGet, Route("redis"), IgnorePerformance] // to be removed when no longer needed
-    public ActionResult UpdateFromRedis()
-    {
-        int counter;
-        try
-        {
-            counter = _redisService.UpdateDatabase();
-        }
-        catch (Exception e)
-        {
-            throw new PlatformException("Error occurred while attempting to update from Redis.", inner: e);
-        }
-        return Ok(message: $"Data successfully fetched from Redis; {counter} new entries entered into Mongo.");
-    }
-
     // Fetches all receipts in Mongo matching provided accountId
     [HttpGet, Route("player")]
     public ActionResult Player()
     {
-        string accountId = Require<string>(key: "accountId");
+        string accountId = Require<string>("accountId");
         
         List<Receipt> receipts = _receiptService.GetByAccount(accountId);
 
