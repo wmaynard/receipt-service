@@ -48,7 +48,7 @@ public class TopController : PlatformController
     {
         string accountId = Require<string>("account");
         string signature = Require<string>("signature");
-        RumbleJson rawData = Require<RumbleJson>("receipt"); // There are two methods of validation; unsure if we can eliminate one of these
+        RumbleJson rawData = Require<RumbleJson>("receipt");
         Receipt receipt = rawData.ToModel<Receipt>();
         receipt.AccountId = accountId;
         

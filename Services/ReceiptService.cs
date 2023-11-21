@@ -26,7 +26,7 @@ public class ReceiptService : MinqService<Receipt>
 	    .UpdateAndReturnOne(update => update
 		    .Increment(dbReceipt => dbReceipt.ValidationCount, 1)
 	    )
-	    .AccountId;
+	    ?.AccountId;
     
 	// Fetches receipts that match an accountId
 	public List<Receipt> GetByAccount(string accountId) => mongo
