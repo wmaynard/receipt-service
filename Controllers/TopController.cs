@@ -66,7 +66,7 @@ public class TopController : PlatformController
             {
                 null or "" => SuccessStatus.True,
                 _ when existingAccountId == accountId => SuccessStatus.Duplicated,
-                _ => SuccessStatus.DuplicatedFail
+                _ => SuccessStatus.AccountIdMismatch
             };
         
         ProcessByStatus(status, receipt, accountId, logData: new
@@ -136,7 +136,7 @@ public class TopController : PlatformController
         {
             null or "" => SuccessStatus.True,
             _ when existingAccountId == accountId => SuccessStatus.Duplicated,
-            _ => SuccessStatus.DuplicatedFail
+            _ => SuccessStatus.AccountIdMismatch
         };
         
         ProcessByStatus(status, receipt, accountId, logData: new
@@ -242,7 +242,7 @@ public class TopController : PlatformController
             case SuccessStatus.False:
                 Log.Error(Owner.Will, "Failed to validate receipt.", logData);
                 break;
-            case SuccessStatus.DuplicatedFail:
+            case SuccessStatus.AccountIdMismatch:
                 _apiService.Alert(
                     title: "Duplicate receipt processed with a different account ID.",
                     message: "Duplicate receipt processed with a different account ID. Potential malicious actor.",

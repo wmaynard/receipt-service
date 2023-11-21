@@ -74,5 +74,5 @@ public enum SuccessStatus
     False = 0,
     True = 1,
     Duplicated = 2,
-    DuplicatedFail = 3
+    AccountIdMismatch = 3
 }
