@@ -48,9 +48,9 @@ public class TopController : PlatformController
     {
         string accountId = Require<string>("account");
         string signature = Require<string>("signature");
-        Receipt receipt = Require<Receipt>("receipt");
         RumbleJson rawData = Require<RumbleJson>("receipt"); // There are two methods of validation; unsure if we can eliminate one of these
-        // Receipt temp = rawData.ToModel<Receipt>();
+        Receipt receipt = rawData.ToModel<Receipt>();
+        receipt.AccountId = accountId;
         
         SuccessStatus status = SuccessStatus.False;
         
@@ -61,8 +61,8 @@ public class TopController : PlatformController
         else if (signature == null)
             throw new ReceiptException(receipt, "Failed to verify Google receipt. No signature provided.");
 
-        if (GoogleValidator.IsValid(receipt, rawData, signature))
-            status = _receiptService.GetAccountIdFor(receipt.OrderId, out string existingAccountId) switch // TODO: Increase validation count here
+        if (GoogleValidator.IsValid(rawData, signature))
+            status = _receiptService.GetAccountIdFor(receipt, out string existingAccountId) switch // TODO: Increase validation count here
             {
                 null or "" => SuccessStatus.True,
                 _ when existingAccountId == accountId => SuccessStatus.Duplicated,
@@ -90,8 +90,13 @@ public class TopController : PlatformController
         string accountId = Require<string>("account");
         string receiptAsString = Require<string>("receipt");
         string transactionId = Require<string>("transactionId");
+        
+        if (_forcedValidationService.HasBeenForced(transactionId))
+            return CreateResponse(_receiptService.Exists(transactionId)
+                ? SuccessStatus.True
+                : SuccessStatus.Duplicated);
 
-        SuccessStatus status = PingApple(receiptAsString, accountId, transactionId, out ResponseFromApple response);
+        bool isValid = PingApple(receiptAsString, accountId, transactionId, out ResponseFromApple response);
 
         if (response == null)
         {
@@ -106,15 +111,12 @@ public class TopController : PlatformController
         PurchaseDetails details = response.Receipt?.PurchaseDetails?.Find(appleInApp => appleInApp.TransactionId == transactionId);
 
         if (details == null)
-        {
-            status = SuccessStatus.False;
             Log.Warn(Owner.Will, "A receipt is valid, but no matching transaction ID was found in the response.", data: new
             {
                 Help = "This could be an indication that someone is using a hacked client or trying to double-redeem an offer.",
                 AccountId = accountId,
                 AppleResponse = response
             });
-        }
 
         Receipt receipt = new()
         {
@@ -130,6 +132,13 @@ public class TopController : PlatformController
                 : 0
         };
         
+        SuccessStatus status = _receiptService.GetAccountIdFor(receipt, out string existingAccountId) switch // TODO: Increase validation count here
+        {
+            null or "" => SuccessStatus.True,
+            _ when existingAccountId == accountId => SuccessStatus.Duplicated,
+            _ => SuccessStatus.DuplicatedFail
+        };
+        
         ProcessByStatus(status, receipt, accountId, logData: new
         {
             AccountId = accountId,
@@ -141,10 +150,8 @@ public class TopController : PlatformController
         return CreateResponse(status, details: details);
     }
 
-    private SuccessStatus PingApple(string receiptAsString, string accountId, string transactionId, out ResponseFromApple response)
+    private bool PingApple(string receiptAsString, string accountId, string transactionId, out ResponseFromApple response)
     {
-        SuccessStatus output = _forcedValidationService.CheckForForcedValidation(transactionId);
-        
         // apple specific looks at receipt
         // receipt is base64 encoded, supposedly fetched from app on device with NSBundle.appStoreReceiptURL
         // requires password
@@ -191,20 +198,14 @@ public class TopController : PlatformController
         if (response?.Status == 21007)
         {
             if (!PlatformEnvironment.IsProd)
-                output = SuccessStatus.True;
-            else
-                Log.Warn(Owner.Will, message: "A testflight purchase was attempted on the production environment. This receipt validation is thus blocked.", data: new
-                {
-                    AccountId = accountId
-                });
+                return true;
+            Log.Warn(Owner.Will, message: "A testflight purchase was attempted on the production environment. This receipt validation is thus blocked.", data: new
+            {
+                AccountId = accountId
+            });
         }
         else if (response?.Status == 0)
-            output = _receiptService.GetAccountIdFor(transactionId, out string existingAccountId) switch
-            {
-                null or "" => SuccessStatus.True,
-                _ when existingAccountId == accountId => SuccessStatus.Duplicated,
-                _ => SuccessStatus.DuplicatedFail
-            };
+            return true;
         else
             _apiService.Alert(
                 title: "Failed to validate iOS receipt.",
@@ -219,11 +220,12 @@ public class TopController : PlatformController
                 owner: Owner.Will
             );
 
-        return output;
+        return false;
     }
 
     private void ProcessByStatus(SuccessStatus status, Receipt receipt, string accountId, object logData)
     {
+        receipt.AccountId ??= accountId;
         switch (status)
         {
             case SuccessStatus.True:

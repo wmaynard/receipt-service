@@ -32,8 +32,8 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 	public const int CONFIG_TYPE                 = 0;     // default 0: only voided iap, 1: voided iap and subscriptions
 
 	private string _nextPageToken = null; // used if over maximum results
-	private long _tokenExpireTime = UnixTime; // in seconds, used for fetching a new auth token when previous expires
-	private long _startTime = UnixTimeMS - 86_400_000; // in milliseconds, start time of requested voided purchases, set to start a day before to cover downtime. to be updated every pass
+	private long _tokenExpireTime = Timestamp.Now; // in seconds, used for fetching a new auth token when previous expires
+	private long _startTime = TimestampMs.OneDayAgo; // in milliseconds, start time of requested voided purchases, set to start a day before to cover downtime. to be updated every pass
 	private string _authToken = null;
 
 	public GoogleChargebackService() : base(collection: "chargebacks", primaryNodeTaskCount: 10, secondaryNodeTaskCount: 0, intervalMs: PlatformEnvironment.IsProd ? CONFIG_TIME_BUFFER : CONFIG_TIME_BUFFER_NON_PROD)
@@ -59,7 +59,7 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 	/// <exception cref="PlatformException"></exception>
 	private void RefreshAuthToken()
 	{
-		if (UnixTime < _tokenExpireTime && _authToken != null)
+		if (Timestamp.Now < _tokenExpireTime && _authToken != null)
 			return;
 		
 		string jwt;
@@ -72,8 +72,8 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 					{ "iss", PlatformEnvironment.Require<string>(key: "googleServiceAccountClientEmail") },
 					{ "scope", "https://www.googleapis.com/auth/androidpublisher" },
 					{ "aud", "https://oauth2.googleapis.com/token" }, // always the same
-					{ "exp", UnixTime + 3_600 }, // in seconds, one hour expiration time -- maximum is one hour
-					{ "iat", UnixTime } // in seconds
+					{ "exp", Timestamp.OneHourFromNow }, // in seconds, one hour expiration time -- maximum is one hour
+					{ "iat", Timestamp.Now }
 				},
 				rsaPrivateKey: PlatformEnvironment.Require<string>(key: "googleServiceAccountPrivateKey")
 			);
@@ -165,7 +165,7 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 		} while (_nextPageToken != null);
 		
 
-		_startTime = UnixTimeMS - 86_400_000; // sets new start time for next pass
+		_startTime = TimestampMs.Now - 86_400_000; // sets new start time for next pass
 	}
 
 	private void SendNotification(string accountId, ChargebackData data)

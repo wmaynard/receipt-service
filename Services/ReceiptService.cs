@@ -16,22 +16,14 @@ public class ReceiptService : MinqService<Receipt>
     public bool Exists(string orderId) => mongo.Count(query => query.EqualTo(receipt => receipt.OrderId, orderId)) > 0;
 
     public string GetAccountIdFor(string orderId, out string accountId) => accountId = mongo
-	    .Where(query => query.EqualTo(receipt => receipt.OrderId, orderId))
-	    .Limit(1)
-	    .Project(receipt => receipt.AccountId)
-	    .FirstOrDefault();
-
+		.Where(query => query.EqualTo(receipt => receipt.OrderId, orderId))
+		.Limit(1)
+		.Project(receipt => receipt.AccountId)
+		.FirstOrDefault();
+    
     public string GetAccountIdFor(Receipt receipt, out string accountId) => accountId = mongo
-	    .Where(query => query.EqualTo(receipt => receipt.OrderId, receipt.OrderId))
-	    .Upsert(query => query
-		    .SetOnInsert(db => db.OrderId, receipt.OrderId)
-		    .SetOnInsert(db => db.PackageName, receipt.PackageName)
-		    .SetOnInsert(db => db.ProductId, receipt.ProductId)
-		    .SetOnInsert(db => db.PurchaseTime, receipt.PurchaseTime)
-		    .SetOnInsert(db => db.PurchaseState, receipt.PurchaseState)
-		    .SetOnInsert(db => db.Quantity, receipt.Quantity)
-		    .SetOnInsert(db => db.Acknowledged, receipt.Acknowledged)
-		    .SetOnInsert(db => db.AccountId, receipt.AccountId) // TODO
+	    .Where(query => query.EqualTo(db => db.OrderId, receipt.OrderId))
+	    .UpdateAndReturnOne(update => update
 		    .Increment(dbReceipt => dbReceipt.ValidationCount, 1)
 	    )
 	    .AccountId;

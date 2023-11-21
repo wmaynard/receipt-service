@@ -21,15 +21,11 @@ namespace Rumble.Platform.ReceiptService.Utilities
         // TODO: Figure out how many validations succeed / fail the first method.
         // The original code would log a warning when falling back to the second, but even from local testing it seemed
         // to be the more common validation.  We ended up having quite a few warnings that were not actionable.
-        public static bool IsValid(Receipt receipt, RumbleJson data, string signature) =>
-            Verify(receipt.JSON.Replace(",\"accountId\":null,\"id\":null", ""), signature)
-            || Verify(data.Json, signature);
-            
-
-        private static bool Verify(string message, string signature)
+        public static bool IsValid(RumbleJson rawReceipt, string signature)
         {
             try
             {
+                string message = rawReceipt.ToJson();
                 using RSACryptoServiceProvider rsa = new();
                 rsa.ImportParameters(_rsaKeyInfo);
                 return rsa.VerifyData(Encoding.ASCII.GetBytes(message), "SHA1", Convert.FromBase64String(signature));
@@ -38,8 +34,8 @@ namespace Rumble.Platform.ReceiptService.Utilities
             {
                 Log.Critical(Owner.Will, "Error occured while attempting to validate Google receipt.", data: new
                 {
-                   Message = message,
-                   Signature = signature
+                    RawData = rawReceipt,
+                    Signature = signature
                 }, exception: e);
                 return false;
             }
