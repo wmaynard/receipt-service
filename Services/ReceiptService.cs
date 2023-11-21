@@ -28,19 +28,6 @@ public class ReceiptService : MinqService<Receipt>
 	    )
 	    .AccountId;
     
-    public string[] RemoveExistingIdsFrom(params string[] orderIds)
-    {
-	    if (orderIds == null || !orderIds.Any())
-		    return Array.Empty<string>();
-
-	    string[] existing = mongo
-		    .Where(query => query.ContainedIn(receipt => receipt.OrderId, orderIds))
-		    .Project(receipt => receipt.OrderId)
-		    .ToArray();
-	    
-	    return orderIds.Except(existing).ToArray();
-    }
-    
 	// Fetches receipts that match an accountId
 	public List<Receipt> GetByAccount(string accountId) => mongo
 		.Where(query => query.EqualTo(receipt => receipt.AccountId, accountId))
