@@ -89,8 +89,10 @@ public class Receipt : PlatformCollectionDocument
     {
         if (string.IsNullOrWhiteSpace(PackageName))
             throw new BundleMismatchException(this, "Bundle ID missing");
-        if (PackageName != DynamicConfig.Instance?.Require<string>("validBundleId"))
-            throw new BundleMismatchException(this, "Bundle ID mismatch");
+        
+        string validBundleId = DynamicConfig.Instance?.Require<string>("validBundleId");
+        if (PackageName != validBundleId)
+            throw new BundleMismatchException(this, "Bundle ID mismatch", validBundleId);
     }
 }
 // Receipt
