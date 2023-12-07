@@ -176,7 +176,18 @@ public class TopController : PlatformController
                 {"receipt-data", receiptAsString},
                 {"password", PlatformEnvironment.Require<string>("appleSharedSecret")}
             })
-            .OnSuccess(res => { } )
+            .OnSuccess(response =>
+            {
+                string bundleId = response
+                    ?.Optional<RumbleJson>(ResponseFromApple.FRIENDLY_KEY_RECEIPT)
+                    ?.Optional<string>(AppleReceipt.FRIENDLY_KEY_BUNDLE_ID); 
+                if (string.IsNullOrWhiteSpace(bundleId))
+                    Log.Critical(Owner.Will, "No bundle ID detected!  Apple receipt validation will fail!", data: new
+                    {
+                        ResponseAsString = response?.AsString ?? "(empty)",
+                        Code = response?.StatusCode ?? 0
+                    });
+            })
             .OnFailure(res =>
             {
                 _apiService.Alert(
