@@ -187,6 +187,13 @@ public class TopController : PlatformController
                         ResponseAsString = response?.AsString ?? "(empty)",
                         Code = response?.StatusCode ?? 0
                     });
+                else
+                    Log.Info(Owner.Will, "Successful Apple IAP validation", data: new
+                    {
+                        ResponseAsString = response?.AsString ?? "(empty)",
+                        Code = response?.StatusCode ?? 0,
+                        Help = "This is a temporary log to better diagnose intermittent failures and should be removed eventually"
+                    });
             })
             .OnFailure(res =>
             {
