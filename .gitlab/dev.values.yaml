@@ -29,8 +29,8 @@ application:
   secretChecksum:
 hpa:
   enabled: false
-  minReplicas: 2
-  maxReplicas: 3
+  minReplicas: 1
+  maxReplicas: 2
   CPUUtilizationPercentage: 60
   MemUtilizationPercentage: 60
   keda:
@@ -107,10 +107,10 @@ postgresql:
 resources:
   limits:
     cpu: null
-    memory: 224Mi
+    memory: 416Mi
   requests:
     cpu: 128m
-    memory: 192Mi
+    memory: 384Mi
 
 
 ## Configure PodDisruptionBudget
