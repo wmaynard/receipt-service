@@ -16,23 +16,23 @@ public class GenerateJWT
 {
 	public static string GenerateJWTToken(RumbleJson header, RumbleJson payload, string rsaPrivateKey)
 	{
-		var rsaParams = GetRsaParameters(rsaPrivateKey);
-		var encoder = GetRS256JWTEncoder(rsaParams);
+		RSAParameters rsaParams = GetRsaParameters(rsaPrivateKey);
+		IJwtEncoder encoder = GetRS256JWTEncoder(rsaParams);
 
-		var token = encoder.Encode(header, payload, Array.Empty<byte>());
+		string token = encoder.Encode(header, payload, Array.Empty<byte>());
 
 		return token;
 	}
 
 	private static IJwtEncoder GetRS256JWTEncoder(RSAParameters rsaParams)
 	{
-		var csp = new RSACryptoServiceProvider();
+		RSACryptoServiceProvider csp = new();
 		csp.ImportParameters(rsaParams);
 
-		var algorithm = new RS256Algorithm(csp, csp);
-		var serializer = new JsonNetSerializer();
-		var urlEncoder = new JwtBase64UrlEncoder();
-		var encoder = new JwtEncoder(algorithm, serializer, urlEncoder);
+		RS256Algorithm algorithm = new(csp, csp);
+		JsonNetSerializer serializer = new();
+		JwtBase64UrlEncoder urlEncoder = new();
+		JwtEncoder encoder = new(algorithm, serializer, urlEncoder);
 
 		return encoder;
 	}
@@ -40,10 +40,10 @@ public class GenerateJWT
 	private static RSAParameters GetRsaParameters(string rsaPrivateKey)
 	{
 		// use Bouncy Castle to convert the private key to RSA parameters
-		using (var stringReader = new StringReader(rsaPrivateKey))
+		using (StringReader stringReader = new (rsaPrivateKey))
 		{
-			var pemReader = new PemReader(stringReader);
-			var privateRsaParams = pemReader.ReadObject() as RsaPrivateCrtKeyParameters;
+			PemReader pemReader = new (stringReader);
+			RsaPrivateCrtKeyParameters privateRsaParams = pemReader.ReadObject() as RsaPrivateCrtKeyParameters;
 			return DotNetUtilities.ToRSAParameters(privateRsaParams);
 		}
 	}

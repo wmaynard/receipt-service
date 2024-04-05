@@ -31,16 +31,44 @@ public class TopController : PlatformController
     public ObjectResult ValidateReceipt()
     {
         string channel = Require<string>("channel");
-        
-        // Unlike most endpoints in Platform, there are more variables found in the methods here.
-        // It would be MUCH better practice to split up Android and iOS into separate endpoints rather than have
-        // branching execution with shared keys.
-        return channel switch
+
+        try
         {
-            "aos" => ValidateGoogleReceipt(),
-            "ios" => ValidateAppleReceipt(),
-            _ => throw new PlatformException("Receipt called with invalid channel.  Please use 'ios' or 'aos'.")
-        };
+            // Unlike most endpoints in Platform, there are more variables found in the methods here.
+            // It would be MUCH better practice to split up Android and iOS into separate endpoints rather than have
+            // branching execution with shared keys.
+            return channel switch
+            {
+                "aos" => ValidateGoogleReceipt(),
+                "ios" => ValidateAppleReceipt(),
+                _ => throw new PlatformException("Receipt called with invalid channel.  Please use 'ios' or 'aos'.")
+            };
+        }
+        // Specifically catch 500s, which are almost always coming from Apple, to exclude them from the catch-all.
+        catch (StoreUnavailableException)
+        {
+            throw;
+        }
+        // Will | TD-20028: When a request failed in the past, the service would return an HTTP 400 along with the error, as is
+        // standard for all platform services.  This indicates the request should not be retried.  However, Chris was
+        // hesitant to stop retries on his side unless receipt-service specifically sends a "False" success flag.
+        // This is contrary to all behavior elsewhere in Platform, and with this try/catch we effectively accomplish the
+        // same behavior but with a different approach.  Without the "False" success flag, the game server will continue to
+        // spam the validation request, which dumps hundreds if not thousands of logs in the process.
+        // For whatever the next project may be after Tower, get rid of all status flags in all projects.  Having a request
+        // be an HTTP 200 but have "success": "False" is a really bad antipattern; relying on these various flags introduces
+        // nonstandard ways of handling failures and forces a lot of extra clutter into the Platform side for handling.
+        catch (PlatformException e)
+        {
+            Log.Error(Owner.Will, "Receipt could not be processed due to an error.", data: new
+            {
+                Help = "TD-20028 requested an error status which necessitates the suppression of normal Platform behavior."
+            }, exception: e);
+            return Problem(new RumbleJson
+            {
+                { "success", SuccessStatus.False }
+            });
+        }
     }
 
     [HttpPost, Route("google")]
@@ -210,8 +238,10 @@ public class TopController : PlatformController
                     owner: Owner.Will
                 );
             })
-            .Post(out response, out int _);
+            .Post(out response, out int code);
             // TODO: use response.Require<int>("status") instead of a custom model here, as it's the only thing used?
+        if (!code.Between(200, 299))
+            throw new StoreUnavailableException(code);
 
         if (response?.Status == 21007)
         {
