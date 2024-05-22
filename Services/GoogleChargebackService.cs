@@ -26,8 +26,6 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 	private SlackMessageClient            _slackMessageClient;
 #pragma warning restore
 	
-	public const int CONFIG_TIME_BUFFER          = 60_000; // time in ms between requests
-	public const int CONFIG_TIME_BUFFER_NON_PROD = 600_000; // time in ms between requests for non prod environments
 	public const int CONFIG_MAX_RESULTS          = 1_000; // defaults to 1000
 	public const int CONFIG_TYPE                 = 0;     // default 0: only voided iap, 1: voided iap and subscriptions
 
@@ -36,7 +34,7 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 	private long _startTime = TimestampMs.OneDayAgo; // in milliseconds, start time of requested voided purchases, set to start a day before to cover downtime. to be updated every pass
 	private string _authToken = null;
 
-	public GoogleChargebackService() : base(collection: "chargebacks", primaryNodeTaskCount: 10, secondaryNodeTaskCount: 0, intervalMs: PlatformEnvironment.IsProd ? CONFIG_TIME_BUFFER : CONFIG_TIME_BUFFER_NON_PROD)
+	public GoogleChargebackService() : base("chargebacks", primaryNodeTaskCount: 10, secondaryNodeTaskCount: 0, intervalMs: PlatformEnvironment.IsProd ? Common.Utilities.IntervalMs.OneMinute : Common.Utilities.IntervalMs.TenMinutes)
 	{
 		_slackMessageClient = new SlackMessageClient(
 			channel: PlatformEnvironment.Optional<string>(key: "slackChannel") ?? PlatformEnvironment.SlackLogChannel,
@@ -138,7 +136,8 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 					{
 						{ "response", response }
 					},
-					owner: Owner.Will
+					owner: Owner.Will,
+					confluenceLink: null
 				))
 				.Get(out RumbleJson nextRes, out int nextCode);
 
@@ -208,7 +207,7 @@ Timestamp (ms): {data.VoidedTimeMillis}
 			});
 		}
 		else
-			Log.Local(Owner.Will, $"Account ID was null, otherwise I'd notify someone of chargeback {data.OrderId}.", emphasis: Log.LogType.ERROR);
+			Log.Local(Owner.Will, $"Account ID was not found on this environment, otherwise I'd notify someone of chargeback {data.OrderId}.", emphasis: Log.LogType.ERROR);
 		
 		_chargebackLogService.Insert(new ChargebackLog
 		{

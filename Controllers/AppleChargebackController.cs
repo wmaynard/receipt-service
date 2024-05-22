@@ -77,7 +77,8 @@ public class AppleChargebackController : PlatformController
 						{ "Apple Notification", appleChargeback },
 						{ "Renewal Info", appleRenewalInfo }
 					} ,
-					owner: Owner.Will
+					owner: Owner.Will,
+					confluenceLink: null
 				);
 			}
 
@@ -145,7 +146,8 @@ public class AppleChargebackController : PlatformController
 			    {
 			        { "exception", e }
 			    } ,
-				owner: Owner.Will
+				owner: Owner.Will,
+				confluenceLink: null
 			);
 
 			return Problem();

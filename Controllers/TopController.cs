@@ -235,7 +235,8 @@ public class TopController : PlatformController
                         { "Account ID", accountId },
                         { "Response", res }
                     },
-                    owner: Owner.Will
+                    owner: Owner.Will,
+                    confluenceLink: null
                 );
             })
             .Post(out response, out int code);
@@ -265,7 +266,8 @@ public class TopController : PlatformController
                     { "Account ID", accountId },
                     { "Status", response.Status }
                 },
-                owner: Owner.Will
+                owner: Owner.Will,
+                confluenceLink: null
             );
 
         return false;
@@ -299,7 +301,8 @@ public class TopController : PlatformController
                     data: new RumbleJson
                     {
                         { "Account ID", accountId }
-                    } 
+                    },
+                    confluenceLink: null
                 );
                 break;
             default:
