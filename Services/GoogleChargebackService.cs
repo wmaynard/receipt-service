@@ -37,7 +37,7 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 	public GoogleChargebackService() : base("chargebacks", primaryNodeTaskCount: 10, secondaryNodeTaskCount: 0, intervalMs: PlatformEnvironment.IsProd ? Common.Utilities.IntervalMs.OneMinute : Common.Utilities.IntervalMs.TenMinutes)
 	{
 		_slackMessageClient = new SlackMessageClient(
-			channel: PlatformEnvironment.Optional<string>(key: "slackChannel") ?? PlatformEnvironment.SlackLogChannel,
+			channel: PlatformEnvironment.Optional<string>("slackChannel") ?? PlatformEnvironment.SlackLogChannel,
 			token: PlatformEnvironment.SlackLogBotToken
 		);
 		#if DEBUG
@@ -169,27 +169,44 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 
 	private void SendNotification(string accountId, ChargebackData data)
 	{
-		string additionalOwners = _slackMessageClient?.UserSearch("massey").FirstOrDefault()?.Tag ?? "";
+		string additionalOwners = "";
+		try
+		{
+			additionalOwners = _slackMessageClient?.UserSearch("massey").FirstOrDefault()?.Tag ?? "";
 		
-		if (!string.IsNullOrWhiteSpace(additionalOwners))
-			additionalOwners = $"FYI {additionalOwners}";
+			if (!string.IsNullOrWhiteSpace(additionalOwners))
+				additionalOwners = $"FYI {additionalOwners}";
+		}
+		catch (Exception e)
+		{
+			Log.Warn(Owner.Will, "Unable to locate additional user tags for Slack interop.", exception: e);
+		}
 		
-		SlackDiagnostics
-			.Log(
-				title: $"{PlatformEnvironment.Deployment} | Chargeback Banned Player | {DateTime.Now:yyyy.MM.dd HH:mm}", 
-				message: additionalOwners
-			)
-			.Tag(Owner.Will)
-			.Attach("Details", $@"    Account ID: {accountId}
+		try
+		{
+			SlackDiagnostics
+				.Log(
+					title: $"{PlatformEnvironment.Deployment} | Chargeback Banned Player | {DateTime.Now:yyyy.MM.dd HH:mm}", 
+					message: additionalOwners
+				)
+				.Tag(Owner.Will)
+				.Attach("Details", $@"    Account ID: {accountId}
        OrderId: {data.OrderId}
      Singleton: {GetType().Name}
 Timestamp (ms): {data.VoidedTimeMillis}
         Reason: {data.VoidedReason}
         Source: {data.VoidedSource}"
-			)
-			// .Send("C02C18NDJKY") // #slack-app-sandbox
-			.Send(PlatformEnvironment.Require<string>(key: "slackChannel") ?? PlatformEnvironment.SlackLogChannel)
-			.Wait();
+				)
+				.Send(PlatformEnvironment.Require<string>("slackChannel") ?? PlatformEnvironment.SlackLogChannel)
+				.Wait();
+		}
+		catch (Exception e)
+		{
+			Log.Error(Owner.Will, "Unable to send chargeback ban Slack notification; functionality should be unaffected.", data: new
+			{
+				Data = data
+			}, exception: e);
+		}
 	}
 
 	protected override void ProcessTask(ChargebackData data)
