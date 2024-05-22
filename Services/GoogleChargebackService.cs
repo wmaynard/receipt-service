@@ -189,15 +189,14 @@ public class GoogleChargebackService : QueueService<GoogleChargebackService.Char
 					title: $"{PlatformEnvironment.Deployment} | Chargeback Banned Player | {DateTime.Now:yyyy.MM.dd HH:mm}", 
 					message: additionalOwners
 				)
-				.Tag(Owner.Will)
+				?.Tag(Owner.Will)
 				.Attach("Details", $@"    Account ID: {accountId}
-       OrderId: {data.OrderId}
-     Singleton: {GetType().Name}
-Timestamp (ms): {data.VoidedTimeMillis}
-        Reason: {data.VoidedReason}
-        Source: {data.VoidedSource}"
+       OrderId: {data?.OrderId}
+Timestamp (ms): {data?.VoidedTimeMillis}
+        Reason: {data?.VoidedReason}
+        Source: {data?.VoidedSource}"
 				)
-				.Send(PlatformEnvironment.Require<string>("slackChannel") ?? PlatformEnvironment.SlackLogChannel)
+				.Send("C05CJNG9S2E") // #tower-iap_chargebacks_logs
 				.Wait();
 		}
 		catch (Exception e)
