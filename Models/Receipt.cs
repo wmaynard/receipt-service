@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
 using Rumble.Platform.Common.Exceptions;
-using Rumble.Platform.Data;
+using Rumble.Platform.Common.Utilities.JsonTools;
 using Rumble.Platform.Common.Services;
 using Rumble.Platform.ReceiptService.Exceptions;
 

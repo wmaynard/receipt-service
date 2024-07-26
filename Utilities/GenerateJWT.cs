@@ -7,7 +7,7 @@ using JWT.Serializers;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Security;
-using Rumble.Platform.Data;
+using Rumble.Platform.Common.Utilities.JsonTools;
 // ReSharper disable InconsistentNaming
 
 namespace Rumble.Platform.ReceiptService.Utilities;

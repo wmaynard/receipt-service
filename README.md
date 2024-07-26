@@ -1,6 +1,20 @@
 # Receipt Service
 A service for verifying `receipts` for IAP purchases.
 
+## Acknowledgment
+
+Receipt Service was originally created for Rumble Entertainment (which later became R Studios), a mobile gaming company.  The service was responsible for validating in-game purchases for both the Apple App Store & Google Play Store.
+
+R Studios unfortunately closed its doors in July 2024.  This project has been released as open source with permission.
+
+As of this writing, there may still be existing references to Rumble's resources, such as Confluence links, but their absence doesn't have any significant impact.  Some documentation will also be missing until it can be recreated here, since with the company closure any feature specs and explainer articles originally written for Confluence / Slack channels were lost.
+
+While Rumble is shutting down, I'm grateful for the opportunities and human connections I had working there.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) file for details.
+
 # Introduction
 This service allows for checking if a `receipt` for IAP purchases is valid. There are two types of `receipts` that may be 
 verified: **GooglePlay** (`android`) and **Apple** (`ios`). **Google** provides a `RSA public key` to verify on a local 

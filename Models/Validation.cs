@@ -1,5 +1,5 @@
 using Rumble.Platform.Common.Models;
-using Rumble.Platform.Data;
+using Rumble.Platform.Common.Utilities.JsonTools;
 
 namespace Rumble.Platform.ReceiptService.Models;
 
